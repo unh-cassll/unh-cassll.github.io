@@ -6,7 +6,7 @@
 -->
 <html>
 	<head>
-		<title>UNH Coupled Air-Sea Surface Layers Laboratory</title>
+		<title>UNH Ocean Surface Observation Laboratory</title>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
 		<link rel="stylesheet" href="assets/css/main.css" />
@@ -63,9 +63,9 @@
 						<div class="container">
 
 							<header>
-								<h2 style="color:black",class="alt">Coupled Air-Sea Surface Layers Laboratory<br />
+								<h2 style="color:black",class="alt">Ocean Surface Observation Laboratory<br />
 								University of New Hampshire</h2>
-								<p style="margin-top:+100px;">The physical interaction between earth’s <strong>atmosphere</strong> and <strong>oceans</strong> drives <strong>weather</strong>, <strong>climate</strong>, and the <strong>transport of buoyant pollutants</strong>. The <strong>Coupled Air-Sea Surface Layers Laboratory</strong> at the <strong>University of New Hampshire</strong> is centered around the drive to <strong>make better observations</strong> of ocean surface layer <strong>fluid mechanics</strong> and <strong>thermodynamics</strong>. This work exists at the intersection of <strong>engineering</strong> and <strong>physical oceanography</strong>.</p>
+								<p style="margin-top:+100px;">The physical interaction between earth’s <strong>atmosphere</strong> and <strong>oceans</strong> drives <strong>weather</strong>, <strong>climate</strong>, and the <strong>transport of buoyant pollutants</strong>. The <strong>Ocean Surface Observation Laboratory</strong> at the <strong>University of New Hampshire</strong> is centered around the drive to <strong>make better observations</strong> of ocean surface layer <strong>fluid mechanics</strong> and <strong>thermodynamics</strong>. This work exists at the intersection of <strong>engineering</strong> and <strong>physical oceanography</strong>.</p>
 							</header>
 
 							<footer>
@@ -237,7 +237,7 @@
 							<div class="col-6 col-6-small">
 								<ul class="labeled-icons">
 										<h3 class="icon solid fa-building"><span class="label">Address</span></h3>
-										Coupled Air-Sea Surface Layers Laboratory<br />
+										Ocean Surface Observation Laboratory<br />
 										Department of Mechanical Engineering<br />
 										University of New Hampshire<br />
 										Durham, NH 03824
