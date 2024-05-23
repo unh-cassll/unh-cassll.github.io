@@ -20,24 +20,68 @@
             }
         </style>
 	</head>
-<body>
-    <h1>Application of an Airborne System for Observing Wind Waves</h1>
-    <p> The field observations took place on the New Castle Coast Guard region
-        in the Gulf of Maine on June 30th 2023.
 
-    <p> Surface looking polarimetric camera is mounted on the UAV system.
-        Camera motions are controlled and smoothed out using a gimbal.
-        Sea surface slope imagery is retrieved at various heights with a total
-        flight time of 20 minutes.
-        
-        Slope fields are georectified to earth coordinates using the real-time
-        kinematic (RTK) positioning system in the UAV which yields
-        centimeter-scale accuracy.</p>
+<body class="is-preload">
 
-    <!-- Video Embedding -->
-    <h2>Project Video Overview</h2>
-    <video controls>
-        <source src="../videos/2023_06_30_Flight3Rec4_OSM2024_v2.mp4" type="video/mp4">
-    </video>
+		<!-- Header -->
+			<div id="header">
+
+				<div class="top">
+
+					<!-- Logo -->
+						<div id="logo">
+							<span class="image"><img src="images/wave_header.png" alt="" /></span>
+						</div>
+                
+                </div>
+
+            </div>
+
+        <!-- Main -->
+			<div id="main">
+
+				<!-- Intro -->
+					<section id="top" class="one dark cover">
+						<div class="container">
+
+							<header>
+								<h2 style="color:black",class="alt">Application of an Airborne System for Observing Wind Waves</h2>
+								<p style="margin-top:+100px;",>The field observations took place on the New Castle Coast Guard region
+                                    in the Gulf of Maine on June 30th 2023.
+                                <p style="margin-top:+100px;",> Surface looking polarimetric camera is mounted on the UAV system.
+                                        Camera motions are controlled and smoothed out using a gimbal.
+                                        Sea surface slope imagery is retrieved at various heights with a total
+                                        flight time of 20 minutes.
+                                        
+                                        Slope fields are rectified to earth coordinates by 3D rotations corresponding to camera pitch, roll, and yaw. The real-time
+                                        kinematic (RTK) positioning system and inertial navigation system located in the UAV yield
+                                        centimeter-scale accuracy in rectification.</p> 
+
+                                <!-- Video Embedding -->
+                                <h2>Georectified Wave Slope Fields</h2>
+                                <video controls>
+                                <source src="../videos/2023_06_30_Flight3Rec4_OSM2024_v2.mp4" type="video/mp4">
+                                </video>
+                            </header>
+
+							
+
+						</div>
+                </div>
+					</section>
+    
+
+    
+
+
+    <!-- Scripts -->
+			<script src="assets/js/jquery.min.js"></script>
+			<script src="assets/js/jquery.scrolly.min.js"></script>
+			<script src="assets/js/jquery.scrollex.min.js"></script>
+			<script src="assets/js/browser.min.js"></script>
+			<script src="assets/js/breakpoints.min.js"></script>
+			<script src="assets/js/util.js"></script>
+			<script src="assets/js/main.js"></script>
+
 </body>
 </html>
