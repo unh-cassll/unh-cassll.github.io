@@ -38,20 +38,14 @@
     <div class="padded-element">
 	
 		<h2 style="color:black",class="alt">Application of an Airborne System for Observing Wind Waves</h2>
-			<p style="margin-top:+100px;",>The field observations took place on the New Castle Coast Guard region
-                                        in the Gulf of Maine on June 30th 2023.
-                                        Surface looking polarimetric camera is mounted on the UAV system.
-                                        Camera motions are controlled and smoothed out using a gimbal.
-                                        Sea surface slope imagery is retrieved at various heights with a total
-                                        flight time of 20 minutes.
-                                        
-                                        Slope fields are rectified to earth coordinates by 3D rotations corresponding to camera pitch, roll, and yaw. The real-time
-                                        kinematic (RTK) positioning system and inertial navigation system located in the UAV yield
-                                        centimeter-scale accuracy in rectification.</p> 
+			<p style="margin-top:+100px;",>We are actively developing an airborne system for the remote observation of short wind waves and near-surface currents. The system is comprised of a Freefly Alta X quadrotor and a gimballed payload containing multiple polarimetric cameras. In a single 20-minute flight, we are able to recovery the 2D wave slope field at wavelengths ranging from 3 mm to 30 m. This enables determination of the full directional spectrum of wind waves spanning the upper portion of the equilibrium range well into the capillary regime.</p> 
 
        <!-- Video Embedding -->
-            <h3 style="color:black",class="alt">Georectified Wave Slope Fields</h3>
-            <video controls>
+            <h3 style="color:black",class="alt">Demonstration: Georectified Wave Slope Fields</h3>
+            <p style="margin-top:+100px;",>This field observation took place approximately 1 km off the coast of Rye, NH in Summer 2023.                                    
+                                        Slope fields were dynamically rectified to earth coordinates by 3D rotations corresponding to camera pitch, roll, and yaw.
+                                        Additional motion correction (leveraging the full-frame oscillation as detected from the observed wave celerity) is currently being developed to mitigate residual motion contamination.</p> 
+            <video width="640" height="480" controls>
             <source src="../videos/2023_06_30_Flight3Rec4_OSM2024_v2.mp4" type="video/mp4">
             </video>
     
