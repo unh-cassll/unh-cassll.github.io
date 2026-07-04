@@ -1,0 +1,53 @@
+# Custom Pages deployment replacing the managed pages-build-deployment
+# pipeline.  The site is plain static HTML (no Jekyll), so the artifact is
+# the repository content as-is.  The deploy step is retried once after a
+# pause: the managed pipeline has no retry, and its transient "Deployment
+# failed, try again later" errors were failing ~15% of the every-10-minute
+# live-dashboard deployments.
+name: pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Stage site content
+        run: |
+          mkdir -p /tmp/site
+          rsync -a --exclude='.git' --exclude='.github' . /tmp/site/
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: /tmp/site
+
+      - name: Deploy to GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@v4
+        continue-on-error: true
+
+      - name: Pause before retry
+        if: steps.deploy.outcome == 'failure'
+        run: sleep 45
+
+      - name: Retry deploy
+        if: steps.deploy.outcome == 'failure'
+        uses: actions/deploy-pages@v4
