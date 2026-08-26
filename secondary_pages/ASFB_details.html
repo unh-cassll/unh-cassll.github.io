@@ -30,6 +30,62 @@
             background-color:rgb(255, 255, 255)
             color:black
             }
+
+            /* Dashboard: the frame is sized to its own content so this page
+               keeps the only scrollbar, and the section nav rides sticky
+               above it.  Falls back to a self-scrolling pane without JS. */
+            .dash-bar {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            margin: 1em 0 0 0;
+            padding: 0.4em 0.5em 0 0.5em;
+            background: #fff;
+            border-bottom: 1px solid #d8d8d8;
+            box-shadow: 0 1px 6px rgba(0, 0, 0, 0.12);
+            }
+
+            .dash-stamp {
+            font-size: 0.8rem;
+            color: #444;
+            line-height: 1.4;
+            overflow-wrap: anywhere;
+            }
+
+            .dash-nav {
+            display: flex;
+            gap: 0.25em;
+            padding: 0.4em 0 0.35em 0;
+            overflow-x: auto;
+            white-space: nowrap;
+            }
+
+            .dash-nav a {
+            flex: 0 0 auto;
+            padding: 0.3em 0.6em;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #367588;
+            text-decoration: none;
+            border: 1px solid transparent;
+            border-radius: 999px;
+            }
+
+            .dash-nav a:hover { background: #eef4f6; border-color: #367588; }
+            .dash-nav a.is-active { background: #367588; color: #fff; }
+
+            .dash-frame {
+            width: 100%;
+            margin: 0 0 1.5em 0;
+            border: 1px solid #ccc;
+            }
+
+            .dash-frame iframe {
+            display: block;
+            width: 100%;
+            height: 85vh;
+            border: 0;
+            }
         </style>
 	</head>
 
@@ -46,14 +102,18 @@
        <!-- Live data (updated automatically from the buoy telemetry) -->
 
             		<h3 style="color:black",class="alt">live data &mdash; 2026 deployment</h3>
-			<p style="color:black">Interactive time series of the latest 10-minute products
-			(wind, momentum and heat fluxes, waves, temperature, stability, battery &amp;
-			solar power, depth-averaged currents, humidity), summary scatterplots of
-			direct vs. bulk fluxes, and the latest EWDM directional wave spectrum with
-			wind and current arrows. Pan/zoom with the mouse; click legend entries to
-			hide a series.
+			<p style="color:black">Interactive time series of the latest 10-minute products,
+			grouped into sections &mdash; conditions, wind, waves, fluxes, temperature and
+			humidity, currents, power and storage, and direct vs. bulk flux scatterplots.
+			Use the section links below to jump, and the stamp beside them for the buoy
+			position and the currency of the record. Pan/zoom with the mouse; click legend
+			entries to hide a series.
 			<a href="../buoy_live/asfb_live_2026.html" target="_blank">Open full-page version.</a></p>
-			<div style="left: 0; width: 100%; position: relative;"><iframe src="../buoy_live/asfb_live_2026.html" style="width: 100%; height: 3750px; border: 0;" loading="lazy"></iframe></div>
+			<div id="dash-bar" class="dash-bar" style="display:none">
+				<div id="dash-stamp" class="dash-stamp"></div>
+				<nav id="dash-nav" class="dash-nav"></nav>
+			</div>
+			<div class="dash-frame"><iframe id="dash-frame" src="../buoy_live/asfb_live_2026.html" title="ASFB live dashboard"></iframe></div>
 
 
     
@@ -90,6 +150,106 @@
 	</div>	
 
 </section>
+
+    <!-- Dashboard section nav.  The frame is same-origin, so it can be
+         measured and sized to its content: the page then owns the only
+         scrollbar and these links scroll it to a section inside the frame.
+         Without this the frame keeps its CSS height and scrolls itself. -->
+			<script>
+			(function () {
+				var frame = document.getElementById('dash-frame');
+				var bar   = document.getElementById('dash-bar');
+				var nav   = document.getElementById('dash-nav');
+				var stamp = document.getElementById('dash-stamp');
+				if (!frame || !bar) return;
+				var sections = [], active = -1;
+
+				function inner() {
+					try { return frame.contentDocument; } catch (e) { return null; }
+				}
+
+				function fit() {
+					var d = inner();
+					if (!d || !d.body) return;
+					var h = Math.max(d.body.scrollHeight,
+					                 d.documentElement.scrollHeight);
+					if (h > 0 && Math.abs(h - frame.clientHeight) > 2) {
+						frame.style.height = h + 'px';
+					}
+				}
+
+				/* Section top in page coordinates: its offset inside the frame
+				   document plus the frame's own offset in this page. */
+				function pageTop(sec) {
+					var d = inner();
+					if (!d) return 0;
+					return frame.getBoundingClientRect().top + window.pageYOffset
+					     + sec.getBoundingClientRect().top
+					     - d.documentElement.getBoundingClientRect().top;
+				}
+
+				function mark() {
+					if (!sections.length) return;
+					var y = window.pageYOffset + bar.offsetHeight + 24, k = 0;
+					for (var i = 0; i < sections.length; i++) {
+						if (pageTop(sections[i]) <= y) k = i;
+					}
+					if (k === active) return;
+					active = k;
+					for (var j = 0; j < nav.children.length; j++) {
+						nav.children[j].classList.toggle('is-active', j === k);
+					}
+					nav.children[k].scrollIntoView({ block: 'nearest',
+					                                 inline: 'nearest' });
+				}
+
+				function build() {
+					var d = inner();
+					if (!d) return;
+					// the frame's own masthead is redundant once the nav is here
+					var head = d.querySelector('.dash-head');
+					if (head) head.style.display = 'none';
+					var src = d.querySelector('.dash-stamp');
+					if (src) stamp.textContent = src.textContent;
+					sections = Array.prototype.slice.call(
+						d.querySelectorAll('.dash-section'));
+					if (!sections.length) return;
+					nav.innerHTML = '';
+					sections.forEach(function (sec) {
+						var h = sec.querySelector('h2');
+						var a = document.createElement('a');
+						a.href = '#';
+						a.textContent = h ? h.textContent : sec.id;
+						a.addEventListener('click', function (e) {
+							e.preventDefault();
+							window.scrollTo({
+								top: pageTop(sec) - bar.offsetHeight - 8,
+								behavior: 'smooth'
+							});
+						});
+						nav.appendChild(a);
+					});
+					bar.style.display = '';
+					active = -1;
+					mark();
+				}
+
+				frame.addEventListener('load', function () {
+					build();
+					fit();
+					// bokeh lays out after load; re-measure as it settles
+					[100, 400, 1200, 3000].forEach(function (ms) {
+						setTimeout(fit, ms);
+					});
+					var d = inner();
+					if (d && window.ResizeObserver) {
+						new ResizeObserver(fit).observe(d.documentElement);
+					}
+				});
+				window.addEventListener('resize', function () { fit(); mark(); });
+				window.addEventListener('scroll', mark, { passive: true });
+			})();
+			</script>
 
     <!-- Scripts -->
 			<script src="assets/js/jquery.min.js"></script>

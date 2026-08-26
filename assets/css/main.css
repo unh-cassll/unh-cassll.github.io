@@ -2263,6 +2263,20 @@ input, select, textarea {
 				background-color: #e8edec;
 			}
 
+			/* Intro subtitle bubble */
+			#main > section.cover .intro-text {
+				max-width: 42em;
+				margin: 4em auto 0 auto;
+				padding: 1.25em 1.75em;
+				border-radius: 0.75em;
+				background-color: rgba(255, 255, 255, 0.8);
+				color: #000;
+			}
+
+				#main > section.cover .intro-text strong {
+					color: #000;
+				}
+
 /* Wide */
 
 	@media screen and (min-width: 961px) and (max-width: 1880px) {
@@ -2614,6 +2628,12 @@ input, select, textarea {
 
 				#main section.cover header {
 					padding: 0 1em;
+				}
+
+				#main section.cover .intro-text {
+					margin-top: 2em;
+					padding: 1em 1.25em;
+					border-radius: 0.5em;
 				}
 
 		/* Footer */
