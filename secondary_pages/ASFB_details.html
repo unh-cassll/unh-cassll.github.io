@@ -113,7 +113,7 @@
 				<div id="dash-stamp" class="dash-stamp"></div>
 				<nav id="dash-nav" class="dash-nav"></nav>
 			</div>
-			<div class="dash-frame"><iframe id="dash-frame" src="../buoy_live/asfb_live_2026.html" title="ASFB live dashboard"></iframe></div>
+			<div class="dash-frame"><iframe id="dash-frame" src="../buoy_live/asfb_live_2026.html" title="ASFB live dashboard" scrolling="no"></iframe></div>
 
 
     
@@ -171,8 +171,11 @@
 				function fit() {
 					var d = inner();
 					if (!d || !d.body) return;
-					var h = Math.max(d.body.scrollHeight,
-					                 d.documentElement.scrollHeight);
+					// scrollHeight alone reads short on some mobile browsers
+					// while the frame is still laying out
+					var h = Math.max(d.body.scrollHeight, d.body.offsetHeight,
+					                 d.documentElement.scrollHeight,
+					                 d.documentElement.offsetHeight);
 					if (h > 0 && Math.abs(h - frame.clientHeight) > 2) {
 						frame.style.height = h + 'px';
 					}
@@ -222,6 +225,7 @@
 						a.textContent = h ? h.textContent : sec.id;
 						a.addEventListener('click', function (e) {
 							e.preventDefault();
+							fit();
 							window.scrollTo({
 								top: pageTop(sec) - bar.offsetHeight - 8,
 								behavior: 'smooth'
@@ -247,7 +251,11 @@
 					}
 				});
 				window.addEventListener('resize', function () { fit(); mark(); });
+				window.addEventListener('orientationchange', function () {
+					setTimeout(fit, 300);
+				});
 				window.addEventListener('scroll', mark, { passive: true });
+				setInterval(fit, 2000);
 			})();
 			</script>
 
