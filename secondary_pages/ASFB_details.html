@@ -162,7 +162,7 @@
 				var nav   = document.getElementById('dash-nav');
 				var stamp = document.getElementById('dash-stamp');
 				if (!frame || !bar) return;
-				var sections = [], active = -1;
+				var sections = [], active = -1, locked = 0;
 
 				function inner() {
 					try { return frame.contentDocument; } catch (e) { return null; }
@@ -191,34 +191,48 @@
 					     - d.documentElement.getBoundingClientRect().top;
 				}
 
-				function mark() {
-					if (!sections.length) return;
-					var y = window.pageYOffset + bar.offsetHeight + 24, k = 0;
-					for (var i = 0; i < sections.length; i++) {
-						if (pageTop(sections[i]) <= y) k = i;
+				/* Bring a link into view by scrolling the nav strip itself.
+				   scrollIntoView would walk every scrollable ancestor, the page
+				   included, and cancel a smooth scroll already under way. */
+				function showLink(a) {
+					if (!a) return;
+					var l = a.offsetLeft, r = l + a.offsetWidth;
+					if (l < nav.scrollLeft) nav.scrollLeft = l - 8;
+					else if (r > nav.scrollLeft + nav.clientWidth) {
+						nav.scrollLeft = r - nav.clientWidth + 8;
 					}
-					if (k === active) return;
+				}
+
+				function setActive(k) {
+					if (k === active || !nav.children[k]) return;
 					active = k;
 					for (var j = 0; j < nav.children.length; j++) {
 						nav.children[j].classList.toggle('is-active', j === k);
 					}
-					nav.children[k].scrollIntoView({ block: 'nearest',
-					                                 inline: 'nearest' });
+					showLink(nav.children[k]);
+				}
+
+				function mark() {
+					if (!sections.length || locked > Date.now()) return;
+					var y = window.pageYOffset + bar.offsetHeight + 24, k = 0;
+					for (var i = 0; i < sections.length; i++) {
+						if (pageTop(sections[i]) <= y) k = i;
+					}
+					setActive(k);
 				}
 
 				function build() {
 					var d = inner();
-					if (!d) return;
+					var secs = d ? d.querySelectorAll('.dash-section') : [];
+					if (!secs.length) return false;
 					// the frame's own masthead is redundant once the nav is here
 					var head = d.querySelector('.dash-head');
 					if (head) head.style.display = 'none';
 					var src = d.querySelector('.dash-stamp');
 					if (src) stamp.textContent = src.textContent;
-					sections = Array.prototype.slice.call(
-						d.querySelectorAll('.dash-section'));
-					if (!sections.length) return;
+					sections = Array.prototype.slice.call(secs);
 					nav.innerHTML = '';
-					sections.forEach(function (sec) {
+					sections.forEach(function (sec, i) {
 						var h = sec.querySelector('h2');
 						var a = document.createElement('a');
 						a.href = '#';
@@ -226,6 +240,11 @@
 						a.addEventListener('click', function (e) {
 							e.preventDefault();
 							fit();
+							// hold off mark() so it cannot re-mark, and re-scroll,
+							// against a smooth scroll still in flight
+							locked = Date.now() + 1200;
+							active = -1;
+							setActive(i);
 							window.scrollTo({
 								top: pageTop(sec) - bar.offsetHeight - 8,
 								behavior: 'smooth'
@@ -236,20 +255,37 @@
 					bar.style.display = '';
 					active = -1;
 					mark();
+					return true;
 				}
 
-				frame.addEventListener('load', function () {
-					build();
-					fit();
-					// bokeh lays out after load; re-measure as it settles
-					[100, 400, 1200, 3000].forEach(function (ms) {
-						setTimeout(fit, ms);
-					});
-					var d = inner();
-					if (d && window.ResizeObserver) {
-						new ResizeObserver(fit).observe(d.documentElement);
+				/* The frame can finish loading before this script runs, in which
+				   case its load event never fires and the nav is never built, so
+				   try straight away and keep trying until the sections exist. */
+				var built = false;
+				function init() {
+					if (built) return true;
+					built = build();
+					if (built) {
+						fit();
+						[100, 400, 1200, 3000, 8000].forEach(function (ms) {
+							setTimeout(fit, ms);
+						});
+						var d = inner();
+						if (d && window.ResizeObserver) {
+							new ResizeObserver(fit).observe(d.documentElement);
+						}
 					}
-				});
+					return built;
+				}
+
+				frame.addEventListener('load', init);
+				if (!init()) {
+					var tries = setInterval(function () {
+						if (init()) clearInterval(tries);
+					}, 250);
+					setTimeout(function () { clearInterval(tries); }, 60000);
+				}
+
 				window.addEventListener('resize', function () { fit(); mark(); });
 				window.addEventListener('orientationchange', function () {
 					setTimeout(fit, 300);
