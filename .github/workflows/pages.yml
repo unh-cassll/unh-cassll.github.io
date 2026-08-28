@@ -16,9 +16,17 @@ permissions:
   pages: write
   id-token: write
 
+# cancel-in-progress: true so a stuck run cannot freeze the site.  A run that
+# enters "waiting" on the github-pages environment protection rule holds the
+# group indefinitely; with queueing every later push was cancelled behind it
+# and the site sat on stale content for hours while the publisher kept
+# reporting success (2026-08-25 22:30Z and 2026-08-27 23:40Z).  Superseding is
+# safe here: the dashboard republishes every 10 minutes, so the newest content
+# is the only one that matters, and a cancelled deploy is retried by the next
+# push rather than lost.
 concurrency:
   group: pages
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   deploy:
