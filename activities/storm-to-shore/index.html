@@ -1,0 +1,2217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Storm to Shore Wave Lab</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=DM+Mono:wght@400;500&display=swap">
+<style>
+:root {
+  --ground: #eaf2f1;
+  --surface: #fbfdfd;
+  --ink: #0b2a3f;
+  --ink-soft: #476272;
+  --line: #c9dbd9;
+  --sea: #17708a;
+  --sea-tint: #d5e9ea;
+  --buoy: #cf4f17;
+  --on-sea: #ffffff;
+  --display: "Bricolage Grotesque", "Trebuchet MS", "Segoe UI", sans-serif;
+  --body: "Atkinson Hyperlegible", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --mono: "DM Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ground: #06161f;
+    --surface: #0c222f;
+    --ink: #e4f0f1;
+    --ink-soft: #9bb5be;
+    --line: #1c3b4a;
+    --sea: #56b7c9;
+    --sea-tint: #12323f;
+    --buoy: #ff8d52;
+    --on-sea: #06161f;
+  }
+}
+:root[data-theme="dark"] {
+  --ground: #06161f;
+  --surface: #0c222f;
+  --ink: #e4f0f1;
+  --ink-soft: #9bb5be;
+  --line: #1c3b4a;
+  --sea: #56b7c9;
+  --sea-tint: #12323f;
+  --buoy: #ff8d52;
+  --on-sea: #06161f;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font: 400 16px/1.55 var(--body);
+}
+.app {
+  max-width: 1080px;
+  margin-inline: auto;
+  padding-inline: max(16px, env(safe-area-inset-left, 0px));
+  padding-block: 20px 40px;
+  display: grid;
+  gap: 18px;
+}
+
+/* Masthead */
+.masthead { display: grid; gap: 4px; }
+.eyebrow {
+  margin: 0;
+  font: 500 12px/1.2 var(--mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--sea);
+}
+h1 {
+  margin: 0;
+  font: 800 clamp(30px, 6vw, 46px)/1.02 var(--display);
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+.lede { margin: 4px 0 0; max-width: 62ch; color: var(--ink-soft); }
+
+/* Station tabs */
+.tabs {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+}
+.tabs button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  font: 700 15px/1.1 var(--body);
+  cursor: pointer;
+  text-align: left;
+}
+.tabs button .num {
+  font: 500 12px/1 var(--mono);
+  color: var(--sea);
+}
+.tabs button[aria-selected="true"] {
+  background: var(--sea);
+  border-color: var(--sea);
+  color: var(--on-sea);
+}
+.tabs button[aria-selected="true"] .num { color: var(--on-sea); opacity: 0.8; }
+@media (max-width: 760px) {
+  .tabs { grid-template-columns: repeat(6, 1fr); }
+  .tabs button { grid-column: span 2; padding: 10px; font-size: 14px; gap: 6px; }
+}
+
+/* Panels */
+.panel { display: grid; gap: 16px; }
+.panel-head { display: grid; gap: 6px; }
+h2 {
+  margin: 0;
+  font: 600 clamp(22px, 4vw, 28px)/1.1 var(--display);
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+.panel-head p { margin: 0; max-width: 65ch; }
+.term { color: var(--sea); font-weight: 700; }
+
+.bench {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+}
+@media (min-width: 900px) {
+  .bench { grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr); }
+}
+
+.stage { position: relative; }
+.stage canvas {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  aspect-ratio: 16 / 10;
+  border-radius: 12px;
+  background: #0b2f47;
+}
+.stage canvas.plan { aspect-ratio: 5 / 4; }
+#cv-shoal { touch-action: pan-y; cursor: ew-resize; }
+.stage-foot {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 8px 2px 0;
+}
+.playbtn {
+  flex: none;
+  min-width: 64px;
+  padding: 7px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font: 500 12px/1 var(--mono);
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+.caption { margin: 0; font-size: 14px; color: var(--ink-soft); }
+
+.side { display: grid; gap: 14px; }
+.controls {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+.control { display: grid; gap: 4px; }
+.control-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+.control label, .group-label { font-weight: 700; font-size: 15px; }
+.control output {
+  font: 500 14px/1.2 var(--mono);
+  color: var(--sea);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+input[type="range"] {
+  width: 100%;
+  height: 30px;
+  margin: 0;
+  accent-color: var(--sea);
+  cursor: pointer;
+}
+.check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  cursor: pointer;
+}
+.check input { width: 18px; height: 18px; accent-color: var(--sea); }
+.checks { display: flex; flex-wrap: wrap; gap: 8px 18px; }
+
+.pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.pills button, .action {
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--ground);
+  color: var(--ink);
+  font: 700 14px/1.1 var(--body);
+  cursor: pointer;
+}
+.pills button[aria-pressed="true"] {
+  background: var(--sea);
+  border-color: var(--sea);
+  color: var(--on-sea);
+}
+.action {
+  justify-self: start;
+  border-color: var(--buoy);
+  color: var(--buoy);
+  background: transparent;
+}
+button:focus-visible, input:focus-visible, summary:focus-visible {
+  outline: 3px solid var(--buoy);
+  outline-offset: 2px;
+}
+
+.readouts {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--line);
+  gap: 1px;
+}
+.readouts > div { background: var(--surface); padding: 10px 12px; display: grid; gap: 2px; align-content: start; }
+.readouts > div.wide { grid-column: 1 / -1; }
+.readouts dt {
+  font: 500 11px/1.3 var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.readouts dd {
+  margin: 0;
+  font: 500 16px/1.3 var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+.readouts dd small { font-size: 12px; color: var(--ink-soft); }
+
+/* Challenges */
+.challenges { display: grid; gap: 8px; }
+h3 {
+  margin: 4px 0 0;
+  font: 600 18px/1.2 var(--display);
+}
+.challenges > p { margin: 0; color: var(--ink-soft); font-size: 15px; }
+details {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+}
+summary {
+  padding: 12px 14px;
+  cursor: pointer;
+  font-weight: 700;
+  border-radius: 10px;
+}
+details .answer {
+  margin: 0;
+  padding: 0 14px 14px;
+  max-width: 68ch;
+}
+details .answer::before {
+  content: "What's going on: ";
+  font: 500 12px/1 var(--mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--buoy);
+}
+
+.colophon {
+  margin: 8px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  font-size: 13px;
+  color: var(--ink-soft);
+  max-width: 75ch;
+}
+.colophon code { font: 500 13px var(--mono); color: var(--ink); }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="masthead">
+    <p class="eyebrow">Ocean waves activity</p>
+    <h1>Storm to Shore</h1>
+    <p class="lede">Follow ocean waves from the storm that makes them to the beach where they break. Six stops. At each one, move the sliders, make a prediction, then test it.</p>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="Stations">
+    <button role="tab" id="tab-motion" data-station="motion" aria-controls="panel-motion" aria-selected="true"><span class="num">1</span>Motion</button>
+    <button role="tab" id="tab-dispersion" data-station="dispersion" aria-controls="panel-dispersion" aria-selected="false"><span class="num">2</span>Dispersion</button>
+    <button role="tab" id="tab-shoaling" data-station="shoaling" aria-controls="panel-shoaling" aria-selected="false"><span class="num">3</span>Shoaling</button>
+    <button role="tab" id="tab-refraction" data-station="refraction" aria-controls="panel-refraction" aria-selected="false"><span class="num">4</span>Refraction</button>
+    <button role="tab" id="tab-rips" data-station="rips" aria-controls="panel-rips" aria-selected="false"><span class="num">5</span>Rips</button>
+    <button role="tab" id="tab-wind" data-station="wind" aria-controls="panel-wind" aria-selected="false"><span class="num">6</span>Wind</button>
+  </nav>
+
+  <!-- Station 1: orbital motion -->
+  <section class="panel" id="panel-motion" role="tabpanel" aria-labelledby="tab-motion">
+    <div class="panel-head">
+      <h2>What moves?</h2>
+      <p>A wave carries energy across the ocean, but the water itself mostly stays put. Watch the orange buoy: crests pass by, and the buoy just goes around in a loop. The white dots are bits of water below the surface.</p>
+    </div>
+    <div class="bench">
+      <div class="stage">
+        <canvas id="cv-motion" role="img" aria-label="Side view of a wave with water particles moving in circles that shrink with depth"></canvas>
+        <div class="stage-foot">
+          <p class="caption">Side view, drawn to scale. The ▼ markers ride along with the crests.</p>
+          <button class="playbtn" type="button">Pause</button>
+        </div>
+      </div>
+      <div class="side">
+        <div class="controls">
+          <div class="control">
+            <div class="control-top"><label for="mo-len">Wavelength</label><output id="mo-len-out" for="mo-len"></output></div>
+            <input type="range" id="mo-len" min="25" max="100" step="5" value="60">
+          </div>
+          <div class="control">
+            <div class="control-top"><label for="mo-depth">Water depth</label><output id="mo-depth-out" for="mo-depth"></output></div>
+            <input type="range" id="mo-depth" min="4" max="50" step="1" value="40">
+          </div>
+          <div class="control">
+            <div class="control-top"><label for="mo-height">Wave height</label><output id="mo-height-out" for="mo-height"></output></div>
+            <input type="range" id="mo-height" min="1" max="4" step="0.5" value="3">
+          </div>
+        </div>
+        <dl class="readouts">
+          <div><dt>Period</dt><dd id="mo-r-period"></dd></div>
+          <div><dt>Wave speed</dt><dd id="mo-r-speed"></dd></div>
+          <div><dt>Buoy's loop</dt><dd id="mo-r-orbit"></dd></div>
+          <div><dt>Sway at the seabed</dt><dd id="mo-r-bed"></dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="challenges">
+      <h3>Predict, then test</h3>
+      <p>Decide on your answer before you open each one.</p>
+      <details>
+        <summary>Follow one ▼ crest marker, then follow the buoy. Which one makes it across the screen?</summary>
+        <p class="answer">Only the crest. The wave's shape and energy travel. The water loops in place. A floating bottle bobs up and down in nearly the same spot instead of riding the waves to shore.</p>
+      </details>
+      <details>
+        <summary>Set the depth to 50 m and the wavelength to 30 m. How far down do you have to go before the water is nearly still?</summary>
+        <p class="answer">About half a wavelength (the dashed line). The circles shrink quickly with depth. A submarine 50 m down would not feel these waves at all.</p>
+      </details>
+      <details>
+        <summary>Now try shallow water (5 m) with long waves (100 m). What happens to the circles near the bottom?</summary>
+        <p class="answer">They flatten into a back-and-forth sway. If you have snorkeled near a beach, you have felt this surge. The wave now "feels the bottom", and that sets up everything at stops 3 and 4.</p>
+      </details>
+    </div>
+  </section>
+
+  <!-- Station 2: dispersion -->
+  <section class="panel" id="panel-dispersion" role="tabpanel" aria-labelledby="tab-dispersion" hidden>
+    <div class="panel-head">
+      <h2>The wave race</h2>
+      <p id="di-intro-race">In deep water, waves of different lengths travel at different speeds. Scientists call this <span class="term">dispersion</span>. Set up two waves, guess the winner, and race them.</p>
+      <p id="di-intro-storm" hidden>A storm makes waves of every length at once, all jumbled together. Watch what <span class="term">dispersion</span> does to that jumble as it travels, and what a faraway buoy feels.</p>
+    </div>
+    <div class="bench">
+      <div class="stage">
+        <canvas id="cv-disp" role="img" aria-label="Animation of waves of different wavelengths traveling at different speeds"></canvas>
+        <div class="stage-foot">
+          <p class="caption" id="di-caption">Side view, deep water. Time runs 4× faster than real life. Wave heights are not to scale.</p>
+          <button class="playbtn" type="button">Pause</button>
+        </div>
+      </div>
+      <div class="side">
+        <div class="controls">
+          <div class="pills" role="group" aria-label="Experiment">
+            <button type="button" id="di-mode-race" aria-pressed="true">Two-wave race</button>
+            <button type="button" id="di-mode-storm" aria-pressed="false">Storm splash</button>
+          </div>
+          <div id="di-race-controls" style="display:grid;gap:14px">
+            <div class="control">
+              <div class="control-top"><label for="di-a">Wave A length</label><output id="di-a-out" for="di-a"></output></div>
+              <input type="range" id="di-a" min="10" max="200" step="5" value="25">
+            </div>
+            <div class="control">
+              <div class="control-top"><label for="di-b">Wave B length</label><output id="di-b-out" for="di-b"></output></div>
+              <input type="range" id="di-b" min="10" max="200" step="5" value="120">
+            </div>
+            <button type="button" class="action" id="di-restart">Restart race</button>
+          </div>
+          <div id="di-storm-controls" style="display:grid;gap:14px" hidden>
+            <div class="control">
+              <div class="control-top"><label for="di-buoy">Buoy distance from storm</label><output id="di-buoy-out" for="di-buoy"></output></div>
+              <input type="range" id="di-buoy" min="300" max="1300" step="50" value="1000">
+            </div>
+            <button type="button" class="action" id="di-splash">Splash again</button>
+          </div>
+        </div>
+        <dl class="readouts" id="di-race-readouts">
+          <div><dt>Wave A</dt><dd id="di-r-a"></dd></div>
+          <div><dt>Wave B</dt><dd id="di-r-b"></dd></div>
+          <div class="wide"><dt>Comparison</dt><dd id="di-r-ratio"></dd></div>
+        </dl>
+        <dl class="readouts" id="di-storm-readouts" hidden>
+          <div><dt>200 m waves reach buoy</dt><dd id="di-r-first"></dd></div>
+          <div><dt>40 m waves reach buoy</dt><dd id="di-r-last"></dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="challenges">
+      <h3>Predict, then test</h3>
+      <p>Decide on your answer before you open each one.</p>
+      <details>
+        <summary>Long wave against short wave. Which wins?</summary>
+        <p class="answer">The long wave, every time. In deep water, speed = √(g × wavelength ÷ 2π), where g is gravity (9.8 m/s²). A 100 m wave moves at about 12.5 m/s (28 mph), about as fast as the fastest human sprinter at full speed.</p>
+      </details>
+      <details>
+        <summary>Make wave B exactly twice as fast as wave A. How many times longer did it have to be?</summary>
+        <p class="answer">Four times longer. Speed depends on the square root of wavelength, so 25 m and 100 m will do it. To go three times faster you would need nine times the length.</p>
+      </details>
+      <details>
+        <summary>Switch to Storm splash. The buoy is far from the storm. Does it feel long, slow rollers first, or short chop?</summary>
+        <p class="answer">Long rollers first, then shorter and shorter waves. Dispersion sorts the jumble by length. Surf forecasters watch real buoys for this. Very long-period swell means a distant storm's waves have started to arrive. The period shrinks over the next few days, and how fast it shrinks tells them how far away the storm was.</p>
+      </details>
+      <details>
+        <summary>In Storm splash, pick one crest and follow it. Does it keep its place in the pack?</summary>
+        <p class="answer">No. Crests appear at the back of a group, run forward through it, and fade out at the front. In deep water a group of waves, and the energy it carries, moves at half the speed of the crests inside it. So the 200 m waves take twice as long to reach the buoy as the race would suggest.</p>
+      </details>
+    </div>
+  </section>
+
+  <!-- Station 3: shoaling -->
+  <section class="panel" id="panel-shoaling" role="tabpanel" aria-labelledby="tab-shoaling" hidden>
+    <div class="panel-head">
+      <h2>Toward the beach</h2>
+      <p>Once the water is shallower than about half a wavelength, a wave feels the bottom. It slows down, its crests bunch together, and it grows taller until it breaks. This is <span class="term">shoaling</span>. Drag the orange probe to measure the wave anywhere along the way.</p>
+    </div>
+    <div class="bench">
+      <div class="stage">
+        <canvas id="cv-shoal" role="img" aria-label="Side view of waves growing taller and breaking as they move up a sloping beach"></canvas>
+        <div class="stage-foot">
+          <p class="caption">Side view. Heights are stretched about 25× so you can see them. Time runs 3× faster than real life.</p>
+          <button class="playbtn" type="button">Pause</button>
+        </div>
+      </div>
+      <div class="side">
+        <div class="controls">
+          <div class="control">
+            <div class="control-top"><label for="sh-period">Wave period</label><output id="sh-period-out" for="sh-period"></output></div>
+            <input type="range" id="sh-period" min="5" max="16" step="0.5" value="10">
+          </div>
+          <div class="control">
+            <div class="control-top"><label for="sh-height">Starting wave height</label><output id="sh-height-out" for="sh-height"></output></div>
+            <input type="range" id="sh-height" min="0.3" max="2.5" step="0.1" value="1">
+          </div>
+          <div class="control">
+            <div class="control-top"><label for="sh-slope">Beach slope</label><output id="sh-slope-out" for="sh-slope"></output></div>
+            <input type="range" id="sh-slope" min="15" max="55" step="5" value="35">
+          </div>
+          <div class="control">
+            <div class="control-top"><label for="sh-probe">Probe position</label><output id="sh-probe-out" for="sh-probe"></output></div>
+            <input type="range" id="sh-probe" min="0" max="735" step="5" value="150">
+          </div>
+          <label class="check"><input type="checkbox" id="sh-env" checked>Show crest height line</label>
+        </div>
+        <dl class="readouts">
+          <div><dt>Depth at probe</dt><dd id="sh-r-depth"></dd></div>
+          <div><dt>Wave height</dt><dd id="sh-r-height"></dd></div>
+          <div><dt>Wavelength</dt><dd id="sh-r-len"></dd></div>
+          <div><dt>Wave speed</dt><dd id="sh-r-speed"></dd></div>
+          <div class="wide"><dt>Breaking starts</dt><dd id="sh-r-break"></dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="challenges">
+      <h3>Predict, then test</h3>
+      <p>Decide on your answer before you open each one.</p>
+      <details>
+        <summary>Slide the probe from deep water to the beach. Which numbers change, and which one never does?</summary>
+        <p class="answer">Speed and wavelength drop, and height climbs. The period never changes. If 6 crests per minute pass the deep end, 6 per minute must pass every other spot too, or crests would pile up somewhere.</p>
+      </details>
+      <details>
+        <summary>You want the waves to break farther from shore. What would you change?</summary>
+        <p class="answer">Make the starting height bigger (a longer period or a gentler slope helps too). Waves break when their height reaches about ¾ of the water depth, so bigger waves break in deeper water, farther out. Big-wave surf spots break far offshore.</p>
+      </details>
+      <details>
+        <summary>A tsunami in the open ocean can be under 1 m tall and 200 km long. Ships don't even notice it. Why is it so dangerous at the coast?</summary>
+        <p class="answer">It's the same shoaling, pushed to the limit. With a wavelength that long, even the 4 km deep ocean counts as "shallow". So it races along at about 200 m/s, as fast as a jet. In 10 m of water it slows to about 10 m/s. All that energy gets squeezed into a much shorter, much taller wave.</p>
+      </details>
+      <details>
+        <summary>Set the period to 5 s and move the probe slowly shoreward. Does the height grow right away?</summary>
+        <p class="answer">No. It dips by about 4 percent first, then grows. Wave energy moves at the "group speed". That speed briefly rises as the wave starts to feel the bottom, stretching the energy out. Then the big slowdown squeezes it.</p>
+      </details>
+    </div>
+  </section>
+
+  <!-- Station 4: refraction -->
+  <section class="panel" id="panel-refraction" role="tabpanel" aria-labelledby="tab-refraction" hidden>
+    <div class="panel-head">
+      <h2>Bending toward shore</h2>
+      <p>Now look down from above. The part of a crest over shallow water moves slower than the part over deep water, so the whole crest swings around. This is <span class="term">refraction</span>, the same bending light does in a lens. Dark blue is deep, pale blue is shallow.</p>
+    </div>
+    <div class="bench">
+      <div class="stage">
+        <canvas id="cv-refr" class="plan" role="img" aria-label="Bird's-eye view of wave crests bending as they approach the shore"></canvas>
+        <div class="stage-foot">
+          <p class="caption">Bird's-eye view, 600 m wide. Orange rays show the path the wave energy follows. Time runs 10× faster than real life.</p>
+          <button class="playbtn" type="button">Pause</button>
+        </div>
+      </div>
+      <div class="side">
+        <div class="controls">
+          <div class="control">
+            <span class="group-label" id="re-bathy-label">Seafloor shape</span>
+            <div class="pills" role="group" aria-labelledby="re-bathy-label" id="re-bathy">
+              <button type="button" data-kind="straight" aria-pressed="true">Straight beach</button>
+              <button type="button" data-kind="headland" aria-pressed="false">Headland</button>
+              <button type="button" data-kind="shoal" aria-pressed="false">Underwater hill</button>
+              <button type="button" data-kind="canyon" aria-pressed="false">Canyon</button>
+            </div>
+          </div>
+          <div class="control">
+            <div class="control-top"><label for="re-angle">Waves come from</label><output id="re-angle-out" for="re-angle"></output></div>
+            <input type="range" id="re-angle" min="-5" max="5" step="1" value="-3">
+          </div>
+          <div class="control">
+            <div class="control-top"><label for="re-period">Wave period</label><output id="re-period-out" for="re-period"></output></div>
+            <input type="range" id="re-period" min="6" max="12" step="1" value="8">
+          </div>
+          <div class="checks">
+            <label class="check"><input type="checkbox" id="re-rays" checked>Wave rays</label>
+            <label class="check"><input type="checkbox" id="re-contours" checked>Depth contours</label>
+          </div>
+        </div>
+        <dl class="readouts">
+          <div><dt>Angle offshore</dt><dd id="re-r-angle"></dd></div>
+          <div><dt>Angle in 2 m of water</dt><dd id="re-r-snell"></dd></div>
+          <div><dt>Speed offshore (15 m deep)</dt><dd id="re-r-c0"></dd></div>
+          <div><dt>Speed in 2 m of water</dt><dd id="re-r-c2"></dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="challenges">
+      <h3>Predict, then test</h3>
+      <p>Decide on your answer before you open each one.</p>
+      <details>
+        <summary>Send waves at the straight beach from a steep angle. What angle do they have by the time they reach the sand?</summary>
+        <p class="answer">Nearly straight-on. The shoreward end of each crest is always in shallower, slower water, so the crest keeps turning until it lines up with the beach. Waves at the beach almost always roll straight at you, whatever direction they started from.</p>
+      </details>
+      <details>
+        <summary>Choose Headland and watch the rays. Where would you go to surf? Where would you anchor a boat?</summary>
+        <p class="answer">Rays crowd together on the headland, so wave energy is focused there: bigger waves, good for surfing, bad for cliffs. Rays spread out in the bays, so waves are smaller there. Over centuries this wears headlands back and fills bays with sand.</p>
+      </details>
+      <details>
+        <summary>Choose Underwater hill. What does the hill do to the waves behind it?</summary>
+        <p class="answer">It acts like a magnifying glass. Crests slow over the shallow hill and wrap inward, and the rays cross behind it. That spot gets extra-large waves even though the beach itself is perfectly straight.</p>
+      </details>
+      <details>
+        <summary>Choose Canyon. Deep water runs right up toward the beach. Are waves at the head of the canyon big or small?</summary>
+        <p class="answer">Small. Waves move faster over the deep canyon, so crests bend away from it and the energy lands on either side. Black's Beach near San Diego gets its famously big surf this way, from Scripps Canyon just offshore.</p>
+      </details>
+    </div>
+  </section>
+
+  <!-- Station 5: rip currents -->
+  <section class="panel" id="panel-rips" role="tabpanel" aria-labelledby="tab-rips" hidden>
+    <div class="panel-head">
+      <h2>The river in the surf</h2>
+      <p>Breaking waves push water over the sandbars toward the beach. That water has to get back out, and it escapes through gaps in the bars as a narrow, fast stream: a <span class="term">rip current</span>. Rips cause most surf rescues. You are the orange swimmer, 55 m out and being pulled away from the sand. Pick a plan.</p>
+    </div>
+    <div class="bench">
+      <div class="stage">
+        <canvas id="cv-rip" class="plan" role="img" aria-label="Bird's-eye view of waves breaking on sandbars with a rip current flowing out through a gap"></canvas>
+        <div class="stage-foot">
+          <p class="caption">Bird's-eye view of 300 m of beach. Time runs 6× faster than real life. The currents are a simplified model of a real rip.</p>
+          <button class="playbtn" type="button">Pause</button>
+        </div>
+      </div>
+      <div class="side">
+        <div class="controls">
+          <div class="control">
+            <span class="group-label" id="ri-plan-label">Escape plan</span>
+            <div class="pills" role="group" aria-labelledby="ri-plan-label" id="ri-plans">
+              <button type="button" data-plan="straight" aria-pressed="false">Swim straight in</button>
+              <button type="button" data-plan="parallel" aria-pressed="false">Swim sideways first</button>
+              <button type="button" data-plan="float" aria-pressed="false">Float, then swim</button>
+            </div>
+          </div>
+          <div class="control">
+            <div class="control-top"><label for="ri-height">Wave height</label><output id="ri-height-out" for="ri-height"></output></div>
+            <input type="range" id="ri-height" min="0.5" max="2.5" step="0.1" value="1.5">
+          </div>
+          <div class="control">
+            <div class="control-top"><label for="ri-swim">Swimmer</label><output id="ri-swim-out" for="ri-swim"></output></div>
+            <input type="range" id="ri-swim" min="0.4" max="2.2" step="0.1" value="0.8">
+          </div>
+          <label class="check"><input type="checkbox" id="ri-currents">Show the currents (pink dye)</label>
+        </div>
+        <dl class="readouts">
+          <div><dt>Fastest part of the rip</dt><dd id="ri-r-rip"></dd></div>
+          <div><dt>Swimmer's top speed</dt><dd id="ri-r-swim"></dd></div>
+          <div><dt>Distance from beach</dt><dd id="ri-r-dist"></dd></div>
+          <div><dt>Energy left</dt><dd id="ri-r-energy"></dd></div>
+          <div class="wide"><dt>What's happening</dt><dd id="ri-r-result" aria-live="polite"></dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="challenges">
+      <h3>Predict, then test</h3>
+      <p>Decide on your answer before you open each one.</p>
+      <details>
+        <summary>Before you show the currents: look at where the waves break white and where the water stays dark and calm. Where would you choose to get in?</summary>
+        <p class="answer">The calm, dark gap looks like the safe spot, and it is the worst one. Waves don't break there because the channel is deeper, and that channel is exactly where the rip flows out. Turn on the pink dye to see it. Lifeguards spot rips this way: a darker gap in the line of breakers, sometimes with foam or sandy water streaming seaward.</p>
+      </details>
+      <details>
+        <summary>Try "Swim straight in". Then turn the swimmer up to Olympic sprinter speed and make the waves big. Does raw speed save you?</summary>
+        <p class="answer">In this model it does, but look at the numbers. Strong rips reach 2 m/s and more. An Olympic champion holds about that speed for 20 seconds, in a calm pool, with no waves. Everyone else goes nowhere and wears themselves out. Exhausted swimmers are the ones who drown. A rip carries you away from shore. It does not pull you under.</p>
+      </details>
+      <details>
+        <summary>Which plan gets you back with the most energy left? Why does it work?</summary>
+        <p class="answer">Swimming sideways, parallel to the beach. A rip is strong but narrow, often only 10 to 30 m wide. A short swim along the beach takes you out of it, and then the breaking waves over the sandbar help push you in. Floating works too: the rip fades out just beyond the breakers, and floating saves energy and lets you wave for help. If you can't tell which way to go, float, stay calm, and signal. Swim near a lifeguard.</p>
+      </details>
+      <details>
+        <summary>Make the waves bigger. What happens to the rip, and why?</summary>
+        <p class="answer">It gets faster. Bigger breaking waves push more water over the bars, and all of it has to drain back out through the same gap. Rips also tend to be strongest near low tide, when the water over the bars is shallow and more waves break there.</p>
+      </details>
+    </div>
+  </section>
+
+  <!-- Station 6: wind-wave growth -->
+  <section class="panel" id="panel-wind" role="tabpanel" aria-labelledby="tab-wind" hidden>
+    <div class="panel-head">
+      <h2>Where waves come from</h2>
+      <p>Back to where waves begin. Almost every wave you have seen at a beach was made by wind blowing over water somewhere. Three things set how big they get. How <span class="term">fast</span> the wind blows, how <span class="term">long</span> it blows, and how much open water it crosses (the <span class="term">fetch</span>).</p>
+    </div>
+    <div class="bench">
+      <div class="stage">
+        <canvas id="cv-wind" role="img" aria-label="Side view of wind-driven waves with a boat for scale, above a chart of wave height along the fetch"></canvas>
+        <div class="stage-foot">
+          <p class="caption">Top: the sea at the downwind end of the fetch. The boat is 20 m long, and the label shows how much heights are stretched. Bottom: how wave height builds up along the way. "Wave height" here is the significant wave height, the average of the tallest third of the waves.</p>
+          <button class="playbtn" type="button">Pause</button>
+        </div>
+      </div>
+      <div class="side">
+        <div class="controls">
+          <div class="control">
+            <span class="group-label" id="wi-preset-label">Try a place</span>
+            <div class="pills" role="group" aria-labelledby="wi-preset-label" id="wi-presets">
+              <button type="button" data-u="8" data-f="1.3" data-d="6">Lake breeze</button>
+              <button type="button" data-u="22" data-f="2.9" data-d="36">Nor'easter</button>
+              <button type="button" data-u="35" data-f="2.3" data-d="12">Hurricane</button>
+              <button type="button" data-u="20" data-f="3.5" data-d="96">Southern Ocean</button>
+            </div>
+          </div>
+          <div class="control">
+            <div class="control-top"><label for="wi-wind">Wind speed</label><output id="wi-wind-out" for="wi-wind"></output></div>
+            <input type="range" id="wi-wind" min="3" max="35" step="1" value="15">
+          </div>
+          <div class="control">
+            <div class="control-top"><label for="wi-fetch">Fetch (open water)</label><output id="wi-fetch-out" for="wi-fetch"></output></div>
+            <input type="range" id="wi-fetch" min="0" max="3.5" step="0.05" value="2.5">
+          </div>
+          <div class="control">
+            <div class="control-top"><label for="wi-dur">How long the wind blows</label><output id="wi-dur-out" for="wi-dur"></output></div>
+            <input type="range" id="wi-dur" min="1" max="96" step="1" value="12">
+          </div>
+        </div>
+        <dl class="readouts">
+          <div><dt>Wave height</dt><dd id="wi-r-height"></dd></div>
+          <div><dt>Period</dt><dd id="wi-r-period"></dd></div>
+          <div><dt>Wavelength</dt><dd id="wi-r-len"></dd></div>
+          <div><dt>Wave speed</dt><dd id="wi-r-speed"></dd></div>
+          <div class="wide"><dt>What's holding the waves back</dt><dd id="wi-r-limit" aria-live="polite"></dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="challenges">
+      <h3>Predict, then test</h3>
+      <p>Decide on your answer before you open each one.</p>
+      <details>
+        <summary>Blow hurricane-force wind (35 m/s) across a 5 km lake for a full day. How big do the waves get?</summary>
+        <p class="answer">Only about a meter. The waves run out of room before they can grow. A pond never has surf, no matter how windy it gets. Fetch is the limit.</p>
+      </details>
+      <details>
+        <summary>Set the wind to 15 m/s with a huge fetch. Slowly increase how long the wind blows. Do the waves ever stop growing?</summary>
+        <p class="answer">Yes, after about a day. At first, time is the limit. Eventually the waves get long enough to travel about as fast as the wind itself, and the wind can't push them any more. Scientists call this a fully developed sea.</p>
+      </details>
+      <details>
+        <summary>With plenty of fetch and time, double the wind from 10 to 20 m/s. Does the wave height double?</summary>
+        <p class="answer">It goes up four times. In a fully developed sea, height grows with the square of wind speed. A gale is far worse than a breezy day. The strongest storms make waves as tall as buildings.</p>
+      </details>
+      <details>
+        <summary>Compare "Hurricane" with "Southern Ocean". The hurricane's wind is much stronger. Which one makes the bigger waves, and why?</summary>
+        <p class="answer">Here the Southern Ocean wins, about 10 m to 8 m. A hurricane is compact: its strongest winds cover only a couple hundred kilometers, so waves leave the windy patch before they finish growing. Around Antarctica, strong wind blows over thousands of kilometers of open water for days. Those waves then cross entire oceans as swell, sorted by dispersion just like at stop 2. (Real hurricanes can beat this estimate when the storm travels along with its own waves and keeps pushing them.)</p>
+      </details>
+    </div>
+  </section>
+
+  <p class="colophon">Under the hood: stops 1 to 5 use linear wave theory, <code>ω² = gk·tanh(kh)</code>. Stop 3 applies linear shoaling up to a breaking limit of H = 0.78h. The peaked crest shapes near breaking are drawn for looks. Stop 4 solves the time-dependent mild-slope equation on a 240 × 192 grid that repeats along the shore, so the wave direction moves in steps. Stop 5 runs the same solver over a barred beach. Its currents are a prescribed, mass-conserving rip cell scaled by wave height, plus an onshore push where waves break over the bar. The swimmer's energy budget is for illustration only. Stop 6 uses the JONSWAP fetch-limited growth curves, <code>gH/U² = 0.0016 (gF/U²)^½</code> and <code>gT/U = 0.286 (gF/U²)^⅓</code>, capped at the Pierson-Moskowitz fully developed sea (<code>gH/U² = 0.2433</code>, <code>gT/U = 8.134</code>). The duration limit comes from the Shore Protection Manual, and the 10 m wind speed is used directly.</p>
+</div>
+
+<script>
+(() => {
+'use strict';
+
+// ---------- Shared ----------
+const G = 9.81;
+const TAU = 2 * Math.PI;
+const $ = id => document.getElementById(id);
+const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const smooth = (v, lo, hi) => { const s = clamp((v - lo) / (hi - lo), 0, 1); return s * s * (3 - 2 * s); };
+
+const COL = {
+  skyTop: '#c4dfe9', skyBot: '#eef6f3',
+  waterTop: '#2a8ba2', waterBot: '#0b2f47',
+  sand: '#e3cf9a', sandDark: '#c5ad74',
+  foam: '#f7fbfa', buoy: '#ee6c2b', flag: '#ffd166', ink: '#0b2a3f',
+};
+const FONT = '"Atkinson Hyperlegible", "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+
+// Linear dispersion: wavenumber from angular frequency and depth (Newton-Raphson)
+function wavenumber(omega, h) {
+  const k0 = omega * omega / G;
+  let k = k0 / Math.sqrt(Math.tanh(k0 * h));
+  for (let i = 0; i < 6; i++) {
+    const th = Math.tanh(k * h);
+    k -= (G * k * th - omega * omega) / (G * th + G * k * h * (1 - th * th));
+  }
+  return k;
+}
+
+// Phase speed, group speed, wavelength at period T and depth h
+function waveProps(T, h) {
+  const omega = TAU / T;
+  const k = wavenumber(omega, h);
+  const kh = k * h;
+  const n = 0.5 * (1 + (kh > 15 ? 0 : 2 * kh / Math.sinh(2 * kh)));
+  const c = omega / k;
+  return { omega, k, c, n, cg: n * c, L: TAU / k };
+}
+
+const fmtSpeed = v => `${v.toFixed(1)} m/s <small>(${Math.round(v * 2.237)} mph)</small>`;
+
+function fitCanvas(cv) {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const cw = cv.clientWidth, ch = cv.clientHeight;
+  const pw = Math.round(cw * dpr), ph = Math.round(ch * dpr);
+  if (cv.width !== pw || cv.height !== ph) { cv.width = pw; cv.height = ph; }
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { ctx, cw, ch };
+}
+
+function text(ctx, str, x, y, opt = {}) {
+  ctx.font = `${opt.bold ? 700 : 400} ${opt.size || 12}px ${FONT}`;
+  ctx.textAlign = opt.align || 'left';
+  ctx.textBaseline = opt.base || 'alphabetic';
+  if (opt.halo) {
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = opt.halo;
+    ctx.lineJoin = 'round';
+    ctx.strokeText(str, x, y);
+  }
+  ctx.fillStyle = opt.color || COL.ink;
+  ctx.fillText(str, x, y);
+}
+
+function vGradient(ctx, y0, y1, c0, c1) {
+  const g = ctx.createLinearGradient(0, y0, 0, y1);
+  g.addColorStop(0, c0);
+  g.addColorStop(1, c1);
+  return g;
+}
+
+let dirty = true;
+let playing = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function bindRange(id, fmt, onInput) {
+  const el = $(id), out = $(id + '-out');
+  const show = () => { out.textContent = fmt(+el.value); };
+  el.addEventListener('input', () => { show(); onInput(+el.value); dirty = true; });
+  show();
+}
+
+// ---------- Station 1: orbital motion ----------
+const motion = {
+  t: 0,
+  cv: $('cv-motion'),
+  rows: [0, 3, 7, 12, 18, 26, 36, 47],
+
+  init() {
+    const upd = () => this.readouts();
+    bindRange('mo-len', v => `${v} m`, upd);
+    bindRange('mo-depth', v => `${v} m`, upd);
+    bindRange('mo-height', v => `${v.toFixed(1)} m`, upd);
+    this.readouts();
+  },
+
+  wave() {
+    const L = +$('mo-len').value, d = +$('mo-depth').value, Hw = +$('mo-height').value;
+    const k = TAU / L;
+    const om = Math.sqrt(G * k * Math.tanh(k * d));
+    const a = Math.min(Hw / 2, 0.3 * d);
+    return { L, d, k, om, a, sh: Math.sinh(k * d) };
+  },
+
+  readouts() {
+    const w = this.wave();
+    const Hw = +$('mo-height').value;
+    $('mo-height-out').textContent = 2 * w.a < Hw - 1e-9 ? `${(2 * w.a).toFixed(1)} m (limited by depth)` : `${Hw.toFixed(1)} m`;
+    $('mo-r-period').textContent = `${(TAU / w.om).toFixed(1)} s`;
+    $('mo-r-speed').innerHTML = fmtSpeed(w.om / w.k);
+    $('mo-r-orbit').textContent = `${(2 * w.a * Math.cosh(w.k * w.d) / w.sh).toFixed(1)} m wide`;
+    $('mo-r-bed').textContent = `${(2 * w.a / w.sh).toFixed(2)} m`;
+  },
+
+  step(dt) { this.t += dt; },
+
+  draw() {
+    const { ctx, cw, ch } = fitCanvas(this.cv);
+    const { L, d, k, om, a, sh } = this.wave();
+    const s = cw / 100;   // px per m
+    const skyM = 9;
+    const X = x => x * s, Y = z => (skyM - z) * s;
+    const t = this.t;
+
+    // Particle position and orbit radii from rest position (x0, z0)
+    const orbit = (x0, z0) => {
+      const th = k * x0 - om * t;
+      const A = a * Math.cosh(k * (z0 + d)) / sh;
+      const B = a * Math.sinh(k * (z0 + d)) / sh;
+      return { x: x0 - A * Math.sin(th), z: z0 + B * Math.cos(th), A, B };
+    };
+
+    ctx.fillStyle = vGradient(ctx, 0, Y(0), COL.skyTop, COL.skyBot);
+    ctx.fillRect(0, 0, cw, ch);
+
+    // Water body bounded by surface particle path
+    ctx.beginPath();
+    for (let x0 = -12; x0 <= 112; x0 += 1) {
+      const p = orbit(x0, 0);
+      ctx.lineTo(X(p.x), Y(p.z));
+    }
+    ctx.lineTo(X(112), ch);
+    ctx.lineTo(X(-12), ch);
+    ctx.closePath();
+    ctx.fillStyle = vGradient(ctx, Y(0), Y(-d), COL.waterTop, COL.waterBot);
+    ctx.fill();
+
+    // Seabed
+    ctx.fillStyle = vGradient(ctx, Y(-d), ch, COL.sand, COL.sandDark);
+    ctx.fillRect(0, Y(-d), cw, ch - Y(-d));
+
+    // Half-wavelength depth
+    if (L / 2 < d - 2) {
+      ctx.setLineDash([6, 6]);
+      ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(0, Y(-L / 2));
+      ctx.lineTo(cw, Y(-L / 2));
+      ctx.stroke();
+      ctx.setLineDash([]);
+      text(ctx, 'half a wavelength down: almost still', 8, Y(-L / 2) - 6, { color: 'rgba(255,255,255,0.9)' });
+    } else {
+      text(ctx, 'the wave feels the bottom', 8, Y(-d) - 8, { color: 'rgba(255,255,255,0.9)' });
+    }
+
+    // Orbits and particles
+    const depths = this.rows.filter(z => z < d - 1.5).concat([d]);
+    for (let col = 0; col < 8; col++) {
+      const x0 = 6.25 + 12.5 * col;
+      for (const zd of depths) {
+        const p = orbit(x0, -zd);
+        const isBuoy = col === 3 && zd === 0;
+        ctx.beginPath();
+        ctx.ellipse(X(x0), Y(-zd), Math.max(p.A * s, 0.01), Math.max(p.B * s, 0.01), 0, 0, TAU);
+        ctx.strokeStyle = isBuoy ? 'rgba(238,108,43,0.9)' : 'rgba(255,255,255,0.28)';
+        ctx.lineWidth = isBuoy ? 1.5 : 1;
+        ctx.stroke();
+        if (isBuoy) continue;
+        ctx.beginPath();
+        ctx.arc(X(p.x), Y(p.z), zd === 0 ? 3 : 2.5, 0, TAU);
+        ctx.fillStyle = COL.foam;
+        ctx.fill();
+      }
+    }
+
+    // Buoy
+    const b = orbit(6.25 + 12.5 * 3, 0);
+    ctx.strokeStyle = COL.ink;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(X(b.x), Y(b.z));
+    ctx.lineTo(X(b.x), Y(b.z) - 16);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(X(b.x), Y(b.z), 6.5, 0, TAU);
+    ctx.fillStyle = COL.buoy;
+    ctx.fill();
+    ctx.strokeStyle = COL.foam;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Crest markers
+    const xc0 = ((om * t / k) % L + L) % L;
+    ctx.fillStyle = COL.ink;
+    for (let xc = xc0 - L; xc < 100 + L; xc += L) {
+      const px = X(xc), py = Y(a) - 9;
+      ctx.beginPath();
+      ctx.moveTo(px - 6, py - 9);
+      ctx.lineTo(px + 6, py - 9);
+      ctx.lineTo(px, py);
+      ctx.closePath();
+      ctx.fill();
+    }
+    text(ctx, 'waves travel this way →', cw - 10, 18, { align: 'right', color: COL.ink });
+  },
+};
+
+// ---------- Station 2: dispersion ----------
+const disp = {
+  cv: $('cv-disp'),
+  mode: 'race',
+  race: { t: 0, done: [null, null] },
+  storm: { t: 0, rec: [], recMax: 1e-6, gain: 1, k: null, om: null, A: null },
+
+  init() {
+    const upd = () => { this.resetRace(); this.readouts(); };
+    bindRange('di-a', v => `${v} m`, upd);
+    bindRange('di-b', v => `${v} m`, upd);
+    bindRange('di-buoy', v => `${v} m`, () => { this.rebuildRecord(); this.readouts(); });
+    $('di-restart').addEventListener('click', () => { this.resetRace(); dirty = true; });
+    $('di-splash').addEventListener('click', () => { this.resetStorm(); dirty = true; });
+    $('di-mode-race').addEventListener('click', () => this.setMode('race'));
+    $('di-mode-storm').addEventListener('click', () => this.setMode('storm'));
+
+    // Storm spectrum: Gaussian bump, 30-200 m wavelengths, 4 km recurrence length
+    const dk = TAU / 4000, k0 = TAU / 200, k1 = TAU / 30;
+    const n = Math.floor((k1 - k0) / dk) + 1;
+    const st = this.storm;
+    st.k = new Float64Array(n);
+    st.om = new Float64Array(n);
+    st.A = new Float64Array(n);
+    let sum = 0;
+    for (let j = 0; j < n; j++) {
+      const k = k0 + j * dk;
+      st.k[j] = k;
+      st.om[j] = Math.sqrt(G * k);
+      st.A[j] = Math.exp(-0.5 * (k * 9) ** 2);
+      sum += st.A[j];
+    }
+    for (let j = 0; j < n; j++) st.A[j] /= sum;
+    this.readouts();
+  },
+
+  setMode(mode) {
+    this.mode = mode;
+    const race = mode === 'race';
+    $('di-mode-race').setAttribute('aria-pressed', race);
+    $('di-mode-storm').setAttribute('aria-pressed', !race);
+    for (const id of ['di-race-controls', 'di-race-readouts', 'di-intro-race']) $(id).hidden = !race;
+    for (const id of ['di-storm-controls', 'di-storm-readouts', 'di-intro-storm']) $(id).hidden = race;
+    $('di-caption').textContent = race
+      ? 'Side view, deep water. Time runs 4× faster than real life. Wave heights are not to scale.'
+      : 'Top: the sea surface, 1.5 km across. Bottom: what the buoy records. Time runs 10× faster, and the height scale zooms in as the waves spread out.';
+    if (race) this.resetRace(); else this.resetStorm();
+    dirty = true;
+  },
+
+  lengths() { return [+$('di-a').value, +$('di-b').value]; },
+
+  resetRace() { this.race.t = 0; this.race.done = [null, null]; },
+
+  resetStorm() {
+    const st = this.storm;
+    st.t = 0; st.rec = []; st.recMax = 1e-6; st.gain = 1;
+  },
+
+  stormEta(x, t) {
+    const { k, om, A } = this.storm;
+    let e = 0;
+    for (let j = 0; j < k.length; j++) e += A[j] * Math.cos(k[j] * x - om[j] * t);
+    return e;
+  },
+
+  rebuildRecord() {
+    const st = this.storm, xb = +$('di-buoy').value;
+    st.rec = []; st.recMax = 1e-6;
+    for (let tt = 0; tt <= st.t; tt += 0.4) {
+      const e = this.stormEta(xb, tt);
+      st.rec.push(tt, e);
+      st.recMax = Math.max(st.recMax, Math.abs(e));
+    }
+  },
+
+  readouts() {
+    const [La, Lb] = this.lengths();
+    const c = L => Math.sqrt(G * L / TAU);
+    const T = L => Math.sqrt(TAU * L / G);
+    $('di-r-a').innerHTML = `${fmtSpeed(c(La))}<br><small>one crest every ${T(La).toFixed(1)} s</small>`;
+    $('di-r-b').innerHTML = `${fmtSpeed(c(Lb))}<br><small>one crest every ${T(Lb).toFixed(1)} s</small>`;
+    const r = c(Lb) / c(La);
+    $('di-r-ratio').textContent = Math.abs(r - 1) < 0.005 ? 'Same length, same speed: a tie'
+      : r > 1 ? `B is ${(Lb / La).toFixed(1)}× longer and ${r.toFixed(2)}× faster`
+      : `A is ${(La / Lb).toFixed(1)}× longer and ${(1 / r).toFixed(2)}× faster`;
+    const xb = +$('di-buoy').value;
+    const tArr = L => xb / (0.5 * c(L));
+    $('di-r-first').textContent = `after ${Math.round(tArr(200))} s`;
+    $('di-r-last').textContent = `after ${Math.round(tArr(40))} s`;
+  },
+
+  step(dt) {
+    if (this.mode === 'race') {
+      const r = this.race;
+      if (r.done[0] !== null && r.done[1] !== null) return;
+      r.t += dt * 4;
+      this.lengths().forEach((L, i) => {
+        const tFin = 440 / Math.sqrt(G * L / TAU);
+        if (r.done[i] === null && r.t >= tFin) r.done[i] = tFin;
+      });
+    } else {
+      const st = this.storm;
+      if (st.t >= 300) return;
+      st.t = Math.min(300, st.t + dt * 10);
+      const e = this.stormEta(+$('di-buoy').value, st.t);
+      st.rec.push(st.t, e);
+      st.recMax = Math.max(st.recMax, Math.abs(e));
+    }
+  },
+
+  draw() {
+    const { ctx, cw, ch } = fitCanvas(this.cv);
+    if (this.mode === 'race') this.drawRace(ctx, cw, ch); else this.drawStorm(ctx, cw, ch);
+  },
+
+  drawRace(ctx, cw, ch) {
+    const r = this.race;
+    const X = x => x / 500 * cw;
+    const xStart = 30, xFin = 470;
+    const laneH = ch / 2;
+    const names = ['A', 'B'], colors = [COL.buoy, COL.flag];
+    const winner = r.done[0] !== null && r.done[1] !== null
+      ? (Math.abs(r.done[0] - r.done[1]) < 1e-6 ? -1 : (r.done[0] < r.done[1] ? 0 : 1)) : null;
+
+    this.lengths().forEach((L, i) => {
+      const top = i * laneH, y0 = top + laneH * 0.52;
+      const c = Math.sqrt(G * L / TAU), k = TAU / L;
+      const amp = laneH * (0.07 + 0.13 * (L - 10) / 190);
+      const xm = Math.min(xFin, xStart + c * r.t);
+      const tRef = r.done[i] !== null ? r.done[i] : r.t;
+      const xPhase = r.done[i] !== null ? xStart + c * r.t : xm;
+
+      ctx.fillStyle = vGradient(ctx, top, y0, COL.skyTop, COL.skyBot);
+      ctx.fillRect(0, top, cw, laneH);
+      ctx.beginPath();
+      ctx.moveTo(0, top + laneH);
+      for (let px = 0; px <= cw; px += 2) {
+        ctx.lineTo(px, y0 - amp * Math.cos(k * (px / cw * 500 - xPhase)));
+      }
+      ctx.lineTo(cw, top + laneH);
+      ctx.closePath();
+      ctx.fillStyle = vGradient(ctx, y0 - amp, top + laneH, COL.waterTop, COL.waterBot);
+      ctx.fill();
+
+      // Start and finish lines
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([5, 5]);
+      ctx.strokeStyle = 'rgba(11,42,63,0.55)';
+      for (const xl of [xStart, xFin]) {
+        ctx.beginPath();
+        ctx.moveTo(X(xl), top + 26);
+        ctx.lineTo(X(xl), top + laneH);
+        ctx.stroke();
+      }
+      ctx.setLineDash([]);
+      text(ctx, 'finish', X(xFin) - 5, top + 40, { align: 'right', size: 11 });
+
+      // Crest marker
+      const ym = y0 - amp * Math.cos(k * (xm - xPhase));
+      ctx.beginPath();
+      ctx.arc(X(xm), ym - 11, 10, 0, TAU);
+      ctx.fillStyle = colors[i];
+      ctx.fill();
+      ctx.strokeStyle = COL.ink;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      text(ctx, names[i], X(xm), ym - 10.5, { align: 'center', base: 'middle', bold: true, size: 12 });
+
+      const status = r.done[i] !== null
+        ? `finished in ${tRef.toFixed(1)} s${winner === i ? ': winner' : ''}`
+        : `${tRef.toFixed(1)} s`;
+      text(ctx, `Wave ${names[i]} · ${L} m long · ${status}`, 10, top + 18, { bold: true, size: 13 });
+    });
+
+    ctx.fillStyle = COL.ink;
+    ctx.fillRect(0, laneH - 1, cw, 2);
+    text(ctx, '440 m course', cw / 2, ch - 8, { align: 'center', color: 'rgba(255,255,255,0.85)', size: 11 });
+  },
+
+  drawStorm(ctx, cw, ch) {
+    const st = this.storm;
+    const xb = +$('di-buoy').value;
+    const topH = ch * 0.58, y0 = topH * 0.56;
+    const xMin = -100, span = 1500;
+    const X = x => (x - xMin) / span * cw;
+
+    // Surface
+    const stepPx = cw > 700 ? 2 : 1.5;
+    const n = Math.ceil(cw / stepPx) + 1;
+    const eta = new Float64Array(n);
+    let mx = 1e-6;
+    for (let i = 0; i < n; i++) {
+      eta[i] = this.stormEta(xMin + i * stepPx / cw * span, st.t);
+      mx = Math.max(mx, Math.abs(eta[i]));
+    }
+    const target = 1 / mx;
+    st.gain = st.t === 0 ? target : st.gain + (target - st.gain) * 0.06;
+    const amp = topH * 0.3;
+    const yOf = e => y0 - clamp(e * st.gain, -1.25, 1.25) * amp;
+
+    ctx.fillStyle = vGradient(ctx, 0, y0, COL.skyTop, COL.skyBot);
+    ctx.fillRect(0, 0, cw, topH);
+    ctx.beginPath();
+    ctx.moveTo(0, topH);
+    for (let i = 0; i < n; i++) ctx.lineTo(i * stepPx, yOf(eta[i]));
+    ctx.lineTo(cw, topH);
+    ctx.closePath();
+    ctx.fillStyle = vGradient(ctx, y0 - amp, topH, COL.waterTop, COL.waterBot);
+    ctx.fill();
+
+    // Storm marker
+    text(ctx, 'storm', X(0), 16, { align: 'center', bold: true, size: 12 });
+    ctx.beginPath();
+    ctx.moveTo(X(0) - 5, 21);
+    ctx.lineTo(X(0) + 5, 21);
+    ctx.lineTo(X(0), 29);
+    ctx.closePath();
+    ctx.fillStyle = COL.ink;
+    ctx.fill();
+
+    // Wave group position markers
+    if (st.t > 25) {
+      for (const [L, name] of [[200, 'long waves (200 m)'], [40, 'short waves (40 m)']]) {
+        const xg = 0.5 * Math.sqrt(G * L / TAU) * st.t;
+        if (xg > span + xMin) continue;
+        ctx.fillStyle = 'rgba(255,255,255,0.9)';
+        ctx.fillRect(X(xg) - 1, topH - 24, 2, 10);
+        text(ctx, name, clamp(X(xg), 60, cw - 60), topH - 4, { align: 'center', color: 'rgba(255,255,255,0.92)', size: 11 });
+      }
+    }
+
+    // Buoy
+    const eb = this.stormEta(xb, st.t);
+    const yb = yOf(eb);
+    ctx.strokeStyle = COL.ink;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(X(xb), yb);
+    ctx.lineTo(X(xb), yb - 15);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(X(xb), yb, 6, 0, TAU);
+    ctx.fillStyle = COL.buoy;
+    ctx.fill();
+    ctx.strokeStyle = COL.foam;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    text(ctx, 'buoy', X(xb), yb - 20, { align: 'center', bold: true, size: 12 });
+    text(ctx, `${Math.round(st.t)} s after the storm`, cw - 10, 16, { align: 'right', size: 12 });
+
+    // Buoy record
+    ctx.fillStyle = '#071c29';
+    ctx.fillRect(0, topH, cw, ch - topH);
+    const stripH = ch - topH, ym = topH + stripH * 0.54;
+    const padL = 10, padR = 10, plotW = cw - padL - padR;
+    ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(padL, ym);
+    ctx.lineTo(cw - padR, ym);
+    ctx.stroke();
+    for (let m = 1; m <= 4; m++) {
+      const px = padL + m * 60 / 300 * plotW;
+      ctx.beginPath();
+      ctx.moveTo(px, topH + 22);
+      ctx.lineTo(px, ch - 16);
+      ctx.stroke();
+      text(ctx, `${m} min`, px, ch - 4, { align: 'center', color: 'rgba(255,255,255,0.6)', size: 10 });
+    }
+    text(ctx, 'What the buoy feels: up-and-down motion over time', padL, topH + 15, { color: 'rgba(255,255,255,0.85)', size: 11.5 });
+    ctx.beginPath();
+    for (let i = 0; i < st.rec.length; i += 2) {
+      const px = padL + st.rec[i] / 300 * plotW;
+      const py = ym - st.rec[i + 1] / st.recMax * stripH * 0.3;
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.strokeStyle = COL.buoy;
+    ctx.lineWidth = 1.5;
+    ctx.lineJoin = 'round';
+    ctx.stroke();
+    if (st.t >= 300) text(ctx, 'Run finished. Press "Splash again".', cw / 2, topH * 0.3, { align: 'center', bold: true, size: 13 });
+  },
+};
+
+// ---------- Station 3: shoaling ----------
+const shoal = {
+  cv: $('cv-shoal'),
+  t: 0,
+  N: 801, h0: 12, xShore: 740, gamma: 0.78,
+  hA: new Float64Array(801), kA: new Float64Array(801), phA: new Float64Array(801),
+  HA: new Float64Array(801), muA: new Float64Array(801),
+  ib: -1, omega: 0,
+
+  init() {
+    const upd = () => { this.build(); this.readouts(); };
+    bindRange('sh-period', v => `${v.toFixed(1)} s`, upd);
+    bindRange('sh-height', v => `${v.toFixed(1)} m`, upd);
+    bindRange('sh-slope', v => `1 : ${v}`, upd);
+    bindRange('sh-probe', v => `${this.xShore - v} m from shore`, () => this.readouts());
+    $('sh-env').addEventListener('change', () => { dirty = true; });
+
+    const drag = ev => {
+      if (ev.type === 'pointermove' && !(ev.buttons & 1)) return;
+      const rect = this.cv.getBoundingClientRect();
+      const x = clamp((ev.clientX - rect.left) / rect.width * 800, 0, 735);
+      $('sh-probe').value = Math.round(x / 5) * 5;
+      $('sh-probe').dispatchEvent(new Event('input'));
+    };
+    this.cv.addEventListener('pointerdown', drag);
+    this.cv.addEventListener('pointermove', drag);
+
+    this.build();
+    this.readouts();
+  },
+
+  // Depth, wavenumber, phase, height profiles on a 1 m grid
+  build() {
+    const T = +$('sh-period').value, H0 = +$('sh-height').value, s = 1 / +$('sh-slope').value;
+    this.omega = TAU / T;
+    const cg0 = waveProps(T, this.h0).cg;
+    this.ib = -1;
+    for (let i = 0; i < this.N; i++) {
+      const h = Math.min(this.h0, (this.xShore - i) * s);
+      this.hA[i] = h;
+      if (h <= 0.02) { this.kA[i] = 0; this.HA[i] = 0; this.muA[i] = 1; this.phA[i] = this.phA[i - 1]; continue; }
+      const p = waveProps(T, h);
+      this.kA[i] = p.k;
+      this.phA[i] = i === 0 ? 0 : this.phA[i - 1] + 0.5 * (p.k + this.kA[i - 1]);
+      const Hs = H0 * Math.sqrt(cg0 / p.cg);
+      if (this.ib < 0 && Hs >= this.gamma * h) this.ib = i;
+      this.HA[i] = this.ib < 0 ? Hs : this.gamma * h;
+      this.muA[i] = Math.min(1, this.HA[i] / h / this.gamma);
+    }
+  },
+
+  readouts() {
+    const T = +$('sh-period').value;
+    const i = +$('sh-probe').value;
+    const h = this.hA[i];
+    const p = waveProps(T, h);
+    $('sh-r-depth').textContent = `${h.toFixed(1)} m`;
+    $('sh-r-height').innerHTML = `${this.HA[i].toFixed(2)} m${this.ib >= 0 && i >= this.ib ? ' <small>(broken)</small>' : ''}`;
+    $('sh-r-len').textContent = `${p.L.toFixed(0)} m`;
+    $('sh-r-speed').innerHTML = fmtSpeed(p.c);
+    $('sh-r-break').textContent = this.ib >= 0
+      ? `${this.xShore - this.ib} m from shore, in ${this.hA[this.ib].toFixed(1)} m of water, at ${this.HA[this.ib].toFixed(1)} m tall`
+      : 'right at the shoreline';
+  },
+
+  step(dt) { this.t += dt * 3; },
+
+  eta(i) {
+    const th = this.phA[i] - this.omega * this.t, mu = this.muA[i];
+    return 0.5 * this.HA[i] * (Math.cos(th) + 0.25 * mu * Math.cos(2 * th) + 0.2 * mu * mu * Math.sin(2 * th));
+  },
+
+  draw() {
+    const { ctx, cw, ch } = fitCanvas(this.cv);
+    const zTop = 5, zBot = -14;
+    const X = x => x / 800 * cw, Y = z => (zTop - z) / (zTop - zBot) * ch;
+    const idx = px => Math.min(this.N - 1, Math.round(px / cw * 800));
+
+    ctx.fillStyle = vGradient(ctx, 0, Y(0), COL.skyTop, COL.skyBot);
+    ctx.fillRect(0, 0, cw, ch);
+
+    // Water
+    ctx.beginPath();
+    ctx.moveTo(0, ch);
+    let pxEnd = 0;
+    for (let px = 0; px <= cw; px += 1.5) {
+      const i = idx(px);
+      if (this.hA[i] <= 0.02) break;
+      ctx.lineTo(px, Y(this.eta(i)));
+      pxEnd = px;
+    }
+    ctx.lineTo(X(this.xShore), Y(0));
+    ctx.lineTo(X(this.xShore), ch);
+    ctx.closePath();
+    ctx.fillStyle = vGradient(ctx, Y(1), Y(-this.h0), COL.waterTop, COL.waterBot);
+    ctx.fill();
+
+    // Whitewater
+    if (this.ib >= 0) {
+      ctx.fillStyle = 'rgba(247,251,250,0.9)';
+      for (let px = Math.ceil(X(this.ib)); px <= pxEnd; px += 1) {
+        const i = idx(px), e = this.eta(i), base = 0.12 * this.HA[i];
+        if (e > base) ctx.fillRect(px, Y(e), 1, Math.max(1.5, Y(base) - Y(e)));
+      }
+    }
+
+    // Seabed and beach
+    ctx.beginPath();
+    ctx.moveTo(0, ch);
+    for (let x = 0; x <= 800; x += 4) {
+      const s = 1 / +$('sh-slope').value;
+      ctx.lineTo(X(x), Y(-Math.min(this.h0, (this.xShore - x) * s)));
+    }
+    ctx.lineTo(cw, ch);
+    ctx.closePath();
+    ctx.fillStyle = vGradient(ctx, Y(4), ch, COL.sand, COL.sandDark);
+    ctx.fill();
+
+    // Crest height line
+    if ($('sh-env').checked) {
+      ctx.beginPath();
+      for (let px = 0; px <= pxEnd; px += 3) {
+        const i = idx(px);
+        const zc = 0.5 * this.HA[i] * (1 + 0.25 * this.muA[i]);
+        if (px === 0) ctx.moveTo(px, Y(zc)); else ctx.lineTo(px, Y(zc));
+      }
+      ctx.setLineDash([5, 4]);
+      ctx.strokeStyle = 'rgba(11,42,63,0.6)';
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // Breaking marker
+    if (this.ib >= 0) {
+      const xb = X(this.ib);
+      ctx.fillStyle = COL.ink;
+      ctx.beginPath();
+      ctx.moveTo(xb - 5, Y(3.1));
+      ctx.lineTo(xb + 5, Y(3.1));
+      ctx.lineTo(xb, Y(3.1) + 8);
+      ctx.closePath();
+      ctx.fill();
+      text(ctx, 'breaking starts', clamp(xb, 50, cw - 50), Y(3.1) - 5, { align: 'center', size: 11.5, bold: true });
+    }
+
+    // Probe
+    const ip = +$('sh-probe').value, xp = X(ip);
+    ctx.strokeStyle = COL.buoy;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(xp, Y(2.2));
+    ctx.lineTo(xp, Y(-this.hA[ip]));
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(xp, Y(2.2), 8, 0, TAU);
+    ctx.fillStyle = COL.buoy;
+    ctx.fill();
+    ctx.strokeStyle = COL.foam;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.strokeStyle = COL.foam;
+    ctx.beginPath();
+    ctx.moveTo(xp - 3.5, Y(2.2));
+    ctx.lineTo(xp + 3.5, Y(2.2));
+    ctx.stroke();
+
+    text(ctx, `${this.h0} m deep out here`, 8, Y(-this.h0) - 8, { color: 'rgba(255,255,255,0.9)', size: 11.5 });
+    text(ctx, 'beach', cw - 8, Y(1.2), { align: 'right', size: 11.5, color: '#5b4a1c' });
+  },
+};
+
+// ---------- Station 4: refraction (mild-slope equation on a grid) ----------
+const refr = {
+  cv: $('cv-refr'),
+  nx: 240, ny: 192, dx: 2.5, h0: 15, slope: 1 / 26, hb: 2.0,
+  kind: 'straight',
+  T: 8, m: 3, showContours: true, contourStep: 3, gainV: 1, simSpeed: 10,
+  t: 0, acc: 0, dt: 0.1,
+  kxF: 0, theta: 0, omega: 0,
+  rays: [],
+
+  alloc() {
+    const n = this.nx * this.ny;
+    this.h = new Float32Array(n);
+    this.a = new Float32Array(n);     // c * cg
+    this.b = new Float32Array(n);     // omega^2 (1 - cg/c)
+    this.sig = new Float32Array(n);   // damping
+    this.u = new Float32Array(n);     // slowness 1/c
+    this.e0 = new Float32Array(n);
+    this.e1 = new Float32Array(n);
+    this.e2 = new Float32Array(n);
+    this.base = new Uint8ClampedArray(n * 3);
+    this.off = document.createElement('canvas');
+    this.off.width = this.nx;
+    this.off.height = this.ny;
+    this.octx = this.off.getContext('2d');
+    this.img = this.octx.createImageData(this.nx, this.ny);
+  },
+
+  init() {
+    this.alloc();
+    this.T = +$('re-period').value;
+    this.showContours = $('re-contours').checked;
+    this.setAngleRange();
+    bindRange('re-angle', v => this.angleLabel(v), v => { this.m = -v; this.setForcing(); this.buildRays(); this.readouts(); });
+    bindRange('re-period', v => `${v} s`, v => { this.T = v; this.buildCoef(); this.setAngleRange(); this.setForcing(); this.buildRays(); this.readouts(); });
+    $('re-rays').addEventListener('change', () => { dirty = true; });
+    $('re-contours').addEventListener('change', ev => { this.showContours = ev.target.checked; this.buildBase(); dirty = true; });
+    for (const btn of $('re-bathy').querySelectorAll('button')) {
+      btn.addEventListener('click', () => {
+        for (const o of $('re-bathy').querySelectorAll('button')) o.setAttribute('aria-pressed', o === btn);
+        this.kind = btn.dataset.kind;
+        this.reset();
+        dirty = true;
+      });
+    }
+    this.reset();
+  },
+
+  reset() {
+    this.buildBathy();
+    this.buildCoef();
+    this.buildBase();
+    this.setForcing();
+    this.buildRays();
+    this.readouts();
+    this.e0.fill(0); this.e1.fill(0); this.e2.fill(0);
+    this.t = 0; this.acc = 0;
+    if (!playing) for (let i = 0; i < 800; i++) this.stepOnce();
+  },
+
+  buildBathy() {
+    const { nx, ny, dx, h0, slope, kind } = this;
+    for (let j = 0; j < ny; j++) {
+      const y = j * dx;
+      for (let i = 0; i < nx; i++) {
+        const x = (i + 0.5) * dx;
+        let ys = 440;
+        if (kind === 'headland') ys -= 170 * Math.exp(-(((x - 300) / 95) ** 2));
+        let h = Math.min(h0, (ys - y) * slope);
+        if (h > 0) {
+          if (kind === 'shoal') h *= 1 - 0.72 * Math.exp(-((x - 300) ** 2 + (y - 210) ** 2) / 75 ** 2);
+          if (kind === 'canyon') h += 28 * Math.exp(-(((x - 300) / 38) ** 2)) * smooth(y, 30, 110) * (1 - smooth(y, 330, 430));
+        }
+        this.h[j * nx + i] = h;
+      }
+    }
+  },
+
+  // Mild-slope coefficients via depth lookup table
+  buildCoef() {
+    const T = this.T;
+    this.omega = TAU / T;
+    const dh = 0.05, hMin = 0.8, nT = Math.ceil(50 / dh) + 1;
+    const cT = new Float32Array(nT), nTb = new Float32Array(nT);
+    for (let m = 0; m < nT; m++) {
+      const p = waveProps(T, Math.max(hMin, m * dh));
+      cT[m] = p.c;
+      nTb[m] = p.n;
+    }
+    let aMax = 0;
+    for (let q = 0; q < this.h.length; q++) {
+      const h = this.h[q];
+      const m = clamp(Math.round(h / dh), 0, nT - 1);
+      const c = cT[m], n = nTb[m];
+      this.a[q] = c * c * n;
+      this.b[q] = this.omega * this.omega * (1 - n);
+      this.u[q] = 1 / c;
+      this.sig[q] = h <= 0 ? 4 : h < this.hb ? 1.5 * (1 - h / this.hb) ** 2 : 0;
+      aMax = Math.max(aMax, this.a[q]);
+    }
+    this.dt = 0.6 * this.dx / Math.sqrt(aMax);
+  },
+
+  // Offshore angle for alongshore mode number m of the periodic domain
+  modeAngle(m) {
+    return Math.asin(m * TAU / (this.nx * this.dx * wavenumber(TAU / this.T, this.h0)));
+  },
+
+  angleLabel(v) {
+    if (v === 0) return 'straight on';
+    return `the ${v < 0 ? 'left' : 'right'}, ${Math.round(Math.abs(this.modeAngle(v)) * 180 / Math.PI)}°`;
+  },
+
+  // Slider range: modes up to 45 degrees at the current period
+  setAngleRange() {
+    const el = $('re-angle');
+    const k0 = wavenumber(TAU / this.T, this.h0);
+    const mMax = Math.max(1, Math.floor(k0 * this.nx * this.dx * Math.SQRT1_2 / TAU));
+    el.min = -mMax;
+    el.max = mMax;
+    this.m = -(+el.value);
+    $('re-angle-out').textContent = this.angleLabel(+el.value);
+  },
+
+  setForcing() {
+    this.kxF = this.m * TAU / (this.nx * this.dx);
+    this.theta = this.modeAngle(this.m);
+  },
+
+  buildBase() {
+    const { nx, ny, h0 } = this;
+    const contours = this.showContours, cs = this.contourStep, hc = this.h0 + cs - 0.1;
+    for (let j = 0; j < ny; j++) {
+      for (let i = 0; i < nx; i++) {
+        const q = j * nx + i, h = this.h[q];
+        let r, g, b;
+        if (h <= 0) {
+          const f = clamp(-h / 4, 0, 1);
+          r = lerp(233, 205, f); g = lerp(216, 184, f); b = lerp(166, 128, f);
+        } else {
+          const f = Math.pow(clamp(h / h0, 0, 1), 0.75);
+          r = lerp(104, 11, f); g = lerp(192, 47, f); b = lerp(196, 71, f);
+          if (contours && j < ny - 1) {
+            const lv = Math.floor(Math.min(h, hc) / cs);
+            const hr = this.h[j * nx + (i + 1) % nx], hd = this.h[q + nx];
+            if (lv !== Math.floor(Math.min(hr, hc) / cs) || lv !== Math.floor(Math.min(hd, hc) / cs)) {
+              r = lerp(r, 255, 0.3); g = lerp(g, 255, 0.3); b = lerp(b, 255, 0.3);
+            }
+          }
+        }
+        this.base[q * 3] = r; this.base[q * 3 + 1] = g; this.base[q * 3 + 2] = b;
+      }
+    }
+  },
+
+  sample(F, x, y) {
+    const { nx, ny, dx } = this;
+    const fi = x / dx - 0.5, fj = clamp(y / dx, 0, ny - 1.001);
+    const i0 = Math.floor(fi), j0 = Math.floor(fj);
+    const tx = fi - i0, ty = fj - j0;
+    const ia = ((i0 % nx) + nx) % nx, ib = (ia + 1) % nx;
+    return lerp(lerp(F[j0 * nx + ia], F[j0 * nx + ib], tx),
+                lerp(F[(j0 + 1) * nx + ia], F[(j0 + 1) * nx + ib], tx), ty);
+  },
+
+  // Ray tracing: dx/ds = p/|p|, dp/ds = grad(1/c)
+  buildRays() {
+    const { nx, ny, dx } = this;
+    const Lx = nx * dx, Ly = (ny - 1) * dx, ds = 2;
+    this.rays = [];
+    for (let r = 0; r < 15; r++) {
+      let x = (r + 0.5) * Lx / 15, y = 0;
+      const u0 = this.sample(this.u, x, y);
+      let px = u0 * Math.sin(this.theta), py = u0 * Math.cos(this.theta);
+      const pts = [x, y];
+      for (let n = 0; n < 1500; n++) {
+        const pm = Math.hypot(px, py);
+        x += px / pm * ds;
+        y += py / pm * ds;
+        if (y < 0 || y > Ly || this.sample(this.h, x, y) < 1) break;
+        px += (this.sample(this.u, x + dx, y) - this.sample(this.u, x - dx, y)) / (2 * dx) * ds;
+        py += (this.sample(this.u, x, y + dx) - this.sample(this.u, x, y - dx)) / (2 * dx) * ds;
+        const un = this.sample(this.u, x, y) / Math.hypot(px, py);
+        px *= un; py *= un;
+        if (n % 2 === 1) pts.push(x, y);
+      }
+      this.rays.push(pts);
+    }
+  },
+
+  readouts() {
+    const T = this.T;
+    const p0 = waveProps(T, this.h0), p2 = waveProps(T, 2);
+    const deg = a => Math.abs(a * 180 / Math.PI);
+    const th2 = Math.asin(Math.sin(this.theta) * p2.c / p0.c);
+    $('re-r-angle').textContent = `${deg(this.theta).toFixed(0)}° from straight-on`;
+    $('re-r-snell').innerHTML = `${deg(th2).toFixed(0)}° <small>(straight beach)</small>`;
+    $('re-r-c0').innerHTML = fmtSpeed(p0.c);
+    $('re-r-c2').innerHTML = fmtSpeed(p2.c);
+  },
+
+  stepOnce() {
+    const { nx, ny, dx, dt, a, b, sig, e0, e1, e2 } = this;
+    const r2 = dt * dt / (dx * dx), dt2 = dt * dt;
+    for (let j = 1; j < ny - 1; j++) {
+      const row = j * nx;
+      for (let i = 0; i < nx; i++) {
+        const q = row + i;
+        const qW = row + (i === 0 ? nx - 1 : i - 1), qE = row + (i === nx - 1 ? 0 : i + 1);
+        const qN = q - nx, qS = q + nx;
+        const e = e1[q], aq = a[q];
+        const flux = (aq + a[qE]) * (e1[qE] - e) - (aq + a[qW]) * (e - e1[qW])
+                   + (aq + a[qS]) * (e1[qS] - e) - (aq + a[qN]) * (e - e1[qN]);
+        const s = 0.5 * sig[q] * dt;
+        e2[q] = (2 * e - (1 - s) * e0[q] + 0.5 * r2 * flux - dt2 * b[q] * e) / (1 + s);
+      }
+    }
+    // Offshore wavemaker
+    this.t += dt;
+    const ramp = Math.min(1, this.t / (2 * TAU / this.omega));
+    for (let i = 0; i < nx; i++) {
+      e2[i] = ramp * Math.sin(this.kxF * (i + 0.5) * dx - this.omega * this.t);
+    }
+    this.e0 = e1; this.e1 = e2; this.e2 = e0;
+  },
+
+  step(dtReal) {
+    this.acc += dtReal * this.simSpeed;
+    let n = 0;
+    while (this.acc >= this.dt && n < 6) { this.stepOnce(); this.acc -= this.dt; n++; }
+    if (n === 6) this.acc = 0;
+  },
+
+  drawField(ctx, cw, ch) {
+    const { h, e1, base, hb, gainV } = this;
+    const px = this.img.data;
+    for (let q = 0, o = 0, m = 0; q < h.length; q++, o += 4, m += 3) {
+      let r = base[m], g = base[m + 1], b = base[m + 2];
+      const d = h[q];
+      if (d > 0) {
+        const v = clamp(e1[q] * gainV, -1.5, 1.5);
+        const s = v * (v > 0 ? 44 : 24);
+        r += s * 0.85; g += s; b += s;
+        if (d < hb + 0.8) {
+          const f = clamp(Math.abs(v) * 1.8, 0, 1) * (1 - d / (hb + 0.8));
+          r += (247 - r) * f; g += (251 - g) * f; b += (250 - b) * f;
+        }
+      }
+      px[o] = r; px[o + 1] = g; px[o + 2] = b; px[o + 3] = 255;
+    }
+    this.octx.putImageData(this.img, 0, 0);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(this.off, 0, 0, cw, ch);
+  },
+
+  draw() {
+    const { ctx, cw, ch } = fitCanvas(this.cv);
+    const { nx, ny, dx } = this;
+    this.drawField(ctx, cw, ch);
+    const sx = cw / (nx * dx), sy = ch / (ny * dx);
+
+    if ($('re-rays').checked) {
+      ctx.strokeStyle = 'rgba(255,138,76,0.95)';
+      ctx.lineWidth = 1.5;
+      ctx.lineJoin = 'round';
+      const Lx = nx * dx;
+      for (const pts of this.rays) {
+        ctx.beginPath();
+        let prev = null;
+        for (let n = 0; n < pts.length; n += 2) {
+          const xw = ((pts[n] % Lx) + Lx) % Lx;
+          if (prev === null || Math.abs(xw - prev) > Lx / 2) ctx.moveTo(xw * sx, pts[n + 1] * sy);
+          else ctx.lineTo(xw * sx, pts[n + 1] * sy);
+          prev = xw;
+        }
+        ctx.stroke();
+      }
+    }
+
+    // Incoming direction arrow
+    const ax = cw / 2, ay = 30, len = 34;
+    const ux = Math.sin(this.theta), uy = Math.cos(this.theta);
+    ctx.strokeStyle = COL.foam;
+    ctx.fillStyle = COL.foam;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(ax - ux * len / 2, ay - uy * len / 2);
+    ctx.lineTo(ax + ux * len / 2, ay + uy * len / 2);
+    ctx.stroke();
+    ctx.beginPath();
+    const tx = ax + ux * (len / 2 + 7), ty = ay + uy * (len / 2 + 7);
+    ctx.moveTo(tx, ty);
+    ctx.lineTo(tx - ux * 12 - uy * 7, ty - uy * 12 + ux * 7);
+    ctx.lineTo(tx - ux * 12 + uy * 7, ty - uy * 12 - ux * 7);
+    ctx.closePath();
+    ctx.fill();
+    text(ctx, 'open ocean', 10, 18, { color: 'rgba(255,255,255,0.9)', size: 12 });
+
+    // Scale bar
+    const bw = 100 * sx;
+    ctx.fillStyle = COL.ink;
+    ctx.fillRect(12, ch - 14, bw, 3);
+    text(ctx, '100 m', 12 + bw / 2, ch - 19, { align: 'center', size: 11, bold: true });
+    text(ctx, 'beach', cw - 10, ch - 12, { align: 'right', size: 12, color: '#5b4a1c', bold: true });
+  },
+};
+
+// ---------- Station 5: rip currents (wave solver + prescribed rip cell) ----------
+function erf(x) {
+  const a = Math.abs(x), t = 1 / (1 + 0.3275911 * a);
+  const p = ((((1.061405429 * t - 1.453152027) * t + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t;
+  return Math.sign(x) * (1 - p * Math.exp(-a * a));
+}
+
+const rip = Object.assign(Object.create(refr), {
+  cv: $('cv-rip'),
+  nx: 240, ny: 192, dx: 1.25, h0: 6, hb: 2.2,
+  T: 8, m: 0, showContours: false, contourStep: 1, simSpeed: 6,
+  Lx: 300, ys: 215, xc: 150, jetW: 18, s0: 70, sBar: 85,
+  H: 1.5, vSwim: 0.8,
+  nTr: 260, tr: null, sw: null,
+
+  init() {
+    this.alloc();
+    this.buildBathy();
+    this.buildCoef();
+    this.buildBase();
+    this.setForcing();
+    this.t = 0; this.acc = 0;
+
+    const swimName = v => v < 0.7 ? 'casual swimmer' : v < 1.2 ? 'good swimmer' : v < 1.7 ? 'swim-team racer' : 'Olympic sprinter';
+    bindRange('ri-height', v => `${v.toFixed(1)} m`, v => { this.setHeight(v); this.readouts(); });
+    bindRange('ri-swim', v => `${v.toFixed(1)} m/s · ${swimName(v)}`, v => { this.vSwim = v; this.readouts(); });
+    this.setHeight(+$('ri-height').value);
+    this.vSwim = +$('ri-swim').value;
+    $('ri-currents').addEventListener('change', () => { dirty = true; });
+    for (const btn of $('ri-plans').querySelectorAll('button')) {
+      btn.addEventListener('click', () => {
+        for (const o of $('ri-plans').querySelectorAll('button')) o.setAttribute('aria-pressed', o === btn);
+        this.start(btn.dataset.plan);
+      });
+    }
+
+    this.tr = new Float32Array(this.nTr * 3);
+    for (let n = 0; n < this.nTr; n++) this.spawn(n);
+    this.start(null);
+  },
+
+  // Solver spin-up on first visit
+  wake() {
+    if (this.ready) return;
+    for (let i = 0; i < 600; i++) this.stepOnce();
+    this.ready = true;
+  },
+
+  setHeight(H) {
+    this.H = H;
+    this.gainV = 0.45 + 0.37 * H;
+  },
+
+  // Planar beach with trough, alongshore bar, and rip channel
+  buildBathy() {
+    const { nx, ny, dx, h0, ys, xc, sBar } = this;
+    for (let j = 0; j < ny; j++) {
+      const s = ys - j * dx;
+      for (let i = 0; i < nx; i++) {
+        const xr = (i + 0.5) * dx - xc;
+        const chan = Math.exp(-((xr / 20) ** 2));
+        let h = s / 30;
+        if (s > 0) {
+          h += 0.8 * Math.exp(-(((s - 45) / 18) ** 2));
+          h -= 1.7 * Math.exp(-(((s - sBar) / 20) ** 2)) * (1 - chan);
+          h += 1.1 * chan * smooth(s, 15, 40) * (1 - smooth(s, 100, 135));
+        }
+        this.h[j * nx + i] = Math.min(h0, h);
+      }
+    }
+  },
+
+  // Surface velocity (alongshore, offshore) at alongshore x and distance from shore s.
+  // Nondivergent rip cell from streamfunction U F(x) G(s), plus onshore push from breaking over the bar.
+  flow(x, s) {
+    const { Lx, xc, jetW: w, s0, sBar } = this;
+    let xr = ((x - xc) % Lx + Lx) % Lx;
+    if (xr > Lx / 2) xr -= Lx;
+    const U = 0.7 * this.H;
+    const mean = w * Math.sqrt(Math.PI) / Lx;
+    const Fp = Math.exp(-((xr / w) ** 2)) - mean;
+    const F = 0.5 * w * Math.sqrt(Math.PI) * erf(xr / w) - mean * xr;
+    const q = Math.max(s, 0) / s0, eq = Math.exp(1 - q * q);
+    const Gs = q * q * eq, Gp = 2 * q / s0 * (1 - q * q) * eq;
+    const push = 0.22 * Math.sqrt(this.H) * Math.exp(-(((s - sBar) / 28) ** 2)) * (1 - Math.exp(-((xr / 20) ** 2)));
+    return [-U * F * Gp, U * Fp * Gs - push, xr];
+  },
+
+  spawn(n) {
+    this.tr[3 * n] = Math.random() * this.Lx;
+    this.tr[3 * n + 1] = 5 + Math.random() * 150;
+    this.tr[3 * n + 2] = 25 + Math.random() * 60;
+  },
+
+  start(plan) {
+    this.sw = { plan, x: this.xc - 4, s: 55, t: 0, energy: 1, status: plan ? 'active' : 'idle', floated: false, tEnd: 0, track: [this.xc - 4, 55] };
+    if (!plan) for (const o of $('ri-plans').querySelectorAll('button')) o.setAttribute('aria-pressed', false);
+    this.readouts();
+    dirty = true;
+  },
+
+  moveSwimmer(dt) {
+    const sw = this.sw;
+    if (sw.status === 'idle' || sw.status === 'safe') return;
+    if (sw.status === 'exhausted' && sw.t - sw.tEnd > 30) return;
+    const [cx, cs, xr] = this.flow(sw.x, sw.s);
+    let vx = 0, vs = 0;
+    if (sw.status === 'active') {
+      const side = () => { vx = (xr >= 0 ? 1 : -1) * this.vSwim; };
+      if (sw.plan === 'float' && !sw.floated) {
+        if (cs < 0.15 || sw.t > 180) sw.floated = true;
+      } else if (sw.plan !== 'straight' && Math.abs(xr) < 45) {
+        side();
+      } else {
+        vs = -this.vSwim;
+      }
+      const swimming = vx !== 0 || vs !== 0;
+      sw.energy = clamp(sw.energy + (swimming ? -dt / 300 : dt / 900), 0, 1);
+    }
+    sw.x += (cx + vx) * dt;
+    sw.s += (cs + vs) * dt;
+    sw.t += dt;
+    const n = sw.track.length;
+    if (Math.hypot(sw.x - sw.track[n - 2], sw.s - sw.track[n - 1]) > 1.5) sw.track.push(sw.x, sw.s);
+    if (sw.status === 'active') {
+      if (sw.s <= 6) sw.status = 'safe';
+      else if (sw.energy <= 0) { sw.status = 'exhausted'; sw.tEnd = sw.t; }
+    }
+    this.readouts();
+  },
+
+  readouts() {
+    const sw = this.sw;
+    $('ri-r-rip').innerHTML = fmtSpeed(0.7 * this.H * (1 - this.jetW * Math.sqrt(Math.PI) / this.Lx));
+    $('ri-r-swim').innerHTML = fmtSpeed(this.vSwim);
+    if (!sw) return;
+    $('ri-r-dist').textContent = `${Math.max(0, sw.s).toFixed(0)} m`;
+    const t = Math.round(sw.status === 'exhausted' ? sw.tEnd : sw.t);
+    $('ri-r-energy').textContent = `${Math.round(sw.energy * 100)}%${sw.status === 'idle' ? '' : ` after ${t} s`}`;
+    let msg = 'Pick an escape plan to start.';
+    if (sw.status === 'active') {
+      msg = sw.plan === 'straight' ? 'Swimming straight at the beach, as hard as possible.'
+        : sw.plan === 'float' && !sw.floated ? 'Floating and saving energy while the rip carries you out.'
+        : Math.abs(this.flow(sw.x, sw.s)[2]) < 45 ? 'Swimming along the beach to get out of the rip.'
+        : 'Out of the rip. Swimming in over the sandbar.';
+    } else if (sw.status === 'safe') {
+      msg = `Made it to the beach in ${t} s with ${Math.round(sw.energy * 100)}% energy left.`;
+    } else if (sw.status === 'exhausted') {
+      msg = `Out of energy after ${t} s and still ${sw.s.toFixed(0)} m from the beach. This swimmer needs a lifeguard.`;
+    }
+    if ($('ri-r-result').textContent !== msg) $('ri-r-result').textContent = msg;
+  },
+
+  step(dtReal) {
+    refr.step.call(this, dtReal);
+    const dt = dtReal * this.simSpeed;
+    const tr = this.tr;
+    for (let n = 0; n < this.nTr; n++) {
+      const [vx, vs] = this.flow(tr[3 * n], tr[3 * n + 1]);
+      tr[3 * n] = ((tr[3 * n] + vx * dt) % this.Lx + this.Lx) % this.Lx;
+      tr[3 * n + 1] += vs * dt;
+      tr[3 * n + 2] -= dt;
+      if (tr[3 * n + 2] < 0 || tr[3 * n + 1] < 4 || tr[3 * n + 1] > 200) this.spawn(n);
+    }
+    this.moveSwimmer(dt);
+  },
+
+  draw() {
+    const { ctx, cw, ch } = fitCanvas(this.cv);
+    this.drawField(ctx, cw, ch);
+    const k = cw / this.Lx;
+    const X = x => x * k, Y = s => (this.ys - s) * k;
+
+    if ($('ri-currents').checked) {
+      // Dye particles with tails along the local current
+      ctx.fillStyle = 'rgba(255,79,160,0.95)';
+      ctx.strokeStyle = 'rgba(255,79,160,0.6)';
+      ctx.lineWidth = 1.6;
+      ctx.lineCap = 'round';
+      for (let n = 0; n < this.nTr; n++) {
+        const x = this.tr[3 * n], s = this.tr[3 * n + 1];
+        const [vx, vs] = this.flow(x, s);
+        ctx.beginPath();
+        ctx.moveTo(X(x), Y(s));
+        ctx.lineTo(X(x - vx * 9), Y(s - vs * 9));
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(X(x), Y(s), 2.2, 0, TAU);
+        ctx.fill();
+      }
+      ctx.lineCap = 'butt';
+      text(ctx, 'rip current', X(this.xc) + 14, Y(118), { color: '#ffffff', halo: 'rgba(7,26,38,0.75)', bold: true, size: 12 });
+      text(ctx, 'sandbar', X(55), Y(this.sBar) + 4, { align: 'center', color: '#ffffff', halo: 'rgba(7,26,38,0.75)', size: 11.5 });
+      text(ctx, 'sandbar', X(245), Y(this.sBar) + 4, { align: 'center', color: '#ffffff', halo: 'rgba(7,26,38,0.75)', size: 11.5 });
+    }
+
+    // Swimmer track and marker
+    const sw = this.sw;
+    ctx.beginPath();
+    for (let n = 0; n < sw.track.length; n += 2) {
+      if (n === 0) ctx.moveTo(X(sw.track[n]), Y(sw.track[n + 1])); else ctx.lineTo(X(sw.track[n]), Y(sw.track[n + 1]));
+    }
+    ctx.lineTo(X(sw.x), Y(sw.s));
+    ctx.strokeStyle = 'rgba(255,209,102,0.95)';
+    ctx.lineWidth = 2;
+    ctx.lineJoin = 'round';
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(X(sw.x), Y(sw.s), 6.5, 0, TAU);
+    ctx.fillStyle = sw.status === 'exhausted' ? '#c2185b' : sw.status === 'safe' ? '#2e9e5b' : COL.buoy;
+    ctx.fill();
+    ctx.strokeStyle = COL.foam;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    const tag = sw.status === 'exhausted' ? 'out of energy' : sw.status === 'safe' ? 'safe' : 'you';
+    text(ctx, tag, X(sw.x) + 11, Y(sw.s) + 4, { color: '#ffffff', halo: 'rgba(7,26,38,0.8)', bold: true, size: 12 });
+
+    text(ctx, 'open ocean', 10, 18, { color: 'rgba(255,255,255,0.9)', size: 12 });
+    const bw = 50 * k;
+    ctx.fillStyle = COL.ink;
+    ctx.fillRect(12, ch - 12, bw, 3);
+    text(ctx, '50 m', 12 + bw / 2, ch - 16, { align: 'center', size: 11, bold: true });
+    text(ctx, 'beach', cw - 10, ch - 10, { align: 'right', size: 12, color: '#5b4a1c', bold: true });
+  },
+});
+
+// ---------- Station 6: wind-wave growth (JONSWAP fetch-limited, PM fully developed) ----------
+const wind = {
+  cv: $('cv-wind'),
+  nC: 28, r: null, w: null, ph: null,
+  streak: 0,
+
+  init() {
+    // Spectral shape on f/fp, weights normalized to Hs = 1
+    const n = this.nC;
+    this.r = new Float64Array(n);
+    this.w = new Float64Array(n);
+    this.ph = new Float64Array(n);
+    let seed = 12345, sum = 0;
+    const rand = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    for (let i = 0; i < n; i++) {
+      const r = 0.62 + (i + rand()) * 2 / n;
+      const sg = r < 1 ? 0.07 : 0.09;
+      const S = Math.pow(r, -5) * Math.exp(-1.25 * Math.pow(r, -4)) * Math.pow(2, Math.exp(-((r - 1) ** 2) / (2 * sg * sg)));
+      this.r[i] = r;
+      this.w[i] = Math.sqrt(S);
+      this.ph[i] = rand() * TAU;
+      sum += S;
+    }
+    const norm = 4 * Math.sqrt(sum / 2);
+    for (let i = 0; i < n; i++) this.w[i] /= norm;
+
+    const upd = () => this.readouts();
+    bindRange('wi-wind', v => `${v} m/s (${Math.round(v * 2.237)} mph)`, upd);
+    bindRange('wi-fetch', v => `${this.fmtKm(Math.pow(10, v))} km`, upd);
+    bindRange('wi-dur', v => v < 48 ? `${v} hours` : `${(v / 24).toFixed(1)} days`, upd);
+    for (const btn of $('wi-presets').querySelectorAll('button')) {
+      btn.addEventListener('click', () => {
+        for (const [id, key] of [['wi-wind', 'u'], ['wi-fetch', 'f'], ['wi-dur', 'd']]) {
+          $(id).value = btn.dataset[key];
+          $(id).dispatchEvent(new Event('input'));
+        }
+      });
+    }
+    this.readouts();
+  },
+
+  fmtKm(F) { return F < 10 ? F.toFixed(1) : String(Number(F.toPrecision(2))); },
+
+  // Hs, Tp for wind speed U (m/s) over effective fetch Fm (m)
+  grow(U, Fm) {
+    const Xf = G * Fm / (U * U);
+    return {
+      Hs: Math.min(0.0016 * Math.sqrt(Xf), 0.2433) * U * U / G,
+      Tp: Math.min(0.286 * Math.cbrt(Xf), 8.134) * U / G,
+    };
+  },
+
+  state() {
+    const U = +$('wi-wind').value;
+    const F = 1000 * Math.pow(10, +$('wi-fetch').value);
+    const tDur = 3600 * +$('wi-dur').value;
+    const Ffd = 23100 * U * U / G;
+    const Fdur = U * U / G * Math.pow(G * tDur / (68.8 * U), 1.5);
+    const Feff = Math.min(F, Fdur, Ffd);
+    const limit = Feff === F ? 'fetch' : Feff === Fdur ? 'time' : 'full';
+    return { U, F, Fdur, Ffd, Feff, limit, ...this.grow(U, Feff) };
+  },
+
+  readouts() {
+    const s = this.state();
+    const L = G * s.Tp * s.Tp / TAU;
+    const tall = s.Hs < 0.5 ? 'knee high at most' : s.Hs < 1.2 ? 'about waist high' : s.Hs < 2.2 ? 'about as tall as an adult'
+      : s.Hs < 3.5 ? 'about basketball-hoop height' : s.Hs < 6 ? 'as tall as a giraffe' : s.Hs < 9 ? 'a two-story house'
+      : s.Hs < 13 ? 'a three-story building' : s.Hs < 18 ? 'a five-story building' : s.Hs < 25 ? 'a seven-story building' : 'a ten-story building';
+    $('wi-r-height').innerHTML = `${s.Hs.toFixed(1)} m <small>(${Math.round(s.Hs * 3.281)} ft)</small><br><small>${tall}</small>`;
+    $('wi-r-period').textContent = `${s.Tp.toFixed(1)} s`;
+    $('wi-r-len').textContent = `${L.toFixed(0)} m`;
+    $('wi-r-speed').innerHTML = fmtSpeed(L / s.Tp);
+    $('wi-r-limit').textContent = s.limit === 'fetch' ? 'Fetch. The waves run out of open water before they finish growing.'
+      : s.limit === 'time' ? `Time. The wind has not blown long enough to use more than ${this.fmtKm(s.Fdur / 1000)} km of this fetch.`
+      : 'Nothing. This sea is fully developed: the wind can\'t make these waves any bigger.';
+  },
+
+  step(dt) {
+    const s = this.state();
+    const wp = TAU / s.Tp;
+    for (let i = 0; i < this.nC; i++) this.ph[i] += this.r[i] * wp * dt;
+    this.streak += s.U * dt;
+  },
+
+  draw() {
+    const { ctx, cw, ch } = fitCanvas(this.cv);
+    const s = this.state();
+    const topH = ch * 0.6, y0 = topH * 0.66, k = cw / 300;
+    const VE = Math.min(3, 0.85 * y0 / (s.Hs * k));
+    const wp = TAU / s.Tp;
+    const kk = new Float64Array(this.nC), aa = new Float64Array(this.nC);
+    for (let i = 0; i < this.nC; i++) {
+      kk[i] = (this.r[i] * wp) ** 2 / G;
+      aa[i] = s.Hs * this.w[i];
+    }
+    const etaAt = x => {
+      let e = 0;
+      for (let i = 0; i < this.nC; i++) e += aa[i] * Math.cos(kk[i] * x - this.ph[i]);
+      return e;
+    };
+    const yOf = e => y0 - e * k * VE;
+
+    // Sky and wind streaks
+    ctx.fillStyle = vGradient(ctx, 0, y0, COL.skyTop, COL.skyBot);
+    ctx.fillRect(0, 0, cw, topH);
+    const len = 8 + s.U * 2.4, yMax = Math.max(24, y0 - s.Hs * k * VE - 14);
+    ctx.strokeStyle = 'rgba(11,42,63,0.28)';
+    ctx.lineWidth = 1.5;
+    ctx.lineCap = 'round';
+    for (let j = 0; j < 12; j++) {
+      const span = cw + len;
+      const px = ((j * 0.618 % 1) * span + this.streak * k * 1.2) % span - len;
+      const py = 24 + (j * 0.377 % 1) * (yMax - 24);
+      ctx.beginPath();
+      ctx.moveTo(px, py);
+      ctx.lineTo(px + len, py);
+      ctx.stroke();
+    }
+    ctx.lineCap = 'butt';
+
+    // Sea surface
+    const stepPx = 2, n = Math.ceil(cw / stepPx) + 1;
+    const eta = new Float64Array(n);
+    for (let i = 0; i < n; i++) eta[i] = etaAt((i * stepPx - cw / 2) / k);
+    ctx.beginPath();
+    ctx.moveTo(0, topH);
+    for (let i = 0; i < n; i++) ctx.lineTo(i * stepPx, yOf(eta[i]));
+    ctx.lineTo(cw, topH);
+    ctx.closePath();
+    ctx.fillStyle = vGradient(ctx, y0 - s.Hs * k * VE, topH, COL.waterTop, COL.waterBot);
+    ctx.fill();
+
+    // Whitecaps
+    if (s.U >= 7) {
+      const thr = s.Hs * clamp(0.75 - s.U / 40, 0.2, 0.6);
+      ctx.fillStyle = 'rgba(247,251,250,0.92)';
+      for (let i = 1; i < n - 1; i++) {
+        if (eta[i] > thr && eta[i] >= eta[i - 1] && eta[i] > eta[i + 1]) {
+          ctx.beginPath();
+          ctx.ellipse(i * stepPx + 3, yOf(eta[i]) + 1.5, 4 + s.U * 0.18, 2, 0.25, 0, TAU);
+          ctx.fill();
+        }
+      }
+    }
+
+    // Boat, 20 m long
+    const eb = etaAt(0), slope = (etaAt(1) - etaAt(-1)) / 2;
+    const Lb = 20 * k;
+    ctx.save();
+    ctx.translate(cw / 2, yOf(eb));
+    ctx.rotate(clamp(Math.atan(-slope * VE), -0.6, 0.6));
+    ctx.lineWidth = 1.2;
+    ctx.strokeStyle = COL.ink;
+    ctx.beginPath();
+    ctx.moveTo(0.1 * Lb, -0.18 * Lb);
+    ctx.lineTo(0.1 * Lb, -0.62 * Lb);
+    ctx.stroke();
+    ctx.fillStyle = COL.foam;
+    ctx.fillRect(-0.28 * Lb, -0.36 * Lb, 0.32 * Lb, 0.18 * Lb);
+    ctx.strokeRect(-0.28 * Lb, -0.36 * Lb, 0.32 * Lb, 0.18 * Lb);
+    ctx.beginPath();
+    ctx.moveTo(-0.5 * Lb, -0.18 * Lb);
+    ctx.lineTo(0.56 * Lb, -0.18 * Lb);
+    ctx.lineTo(0.38 * Lb, 0.07 * Lb);
+    ctx.lineTo(-0.42 * Lb, 0.07 * Lb);
+    ctx.closePath();
+    ctx.fillStyle = COL.buoy;
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+    text(ctx, `wind ${s.U} m/s →`, 10, 17, { bold: true, size: 12 });
+    text(ctx, `heights stretched ${VE.toFixed(1)}×`, cw - 10, 17, { align: 'right', size: 11.5 });
+
+    // Growth chart: Hs along the fetch
+    ctx.fillStyle = '#071c29';
+    ctx.fillRect(0, topH, cw, ch - topH);
+    const pl = 40, pr = 16, pt = topH + 26, pb = ch - 20;
+    const steps = [0.2, 0.5, 1, 2, 4, 6, 10, 16, 24, 32];
+    const yTop = steps.find(v => v >= s.Hs * 1.2) || 32;
+    const PX = f => pl + f / s.F * (cw - pl - pr), PY = h => pb - h / yTop * (pb - pt);
+    ctx.lineWidth = 1;
+    for (const v of [0, yTop / 2, yTop]) {
+      ctx.strokeStyle = 'rgba(255,255,255,0.16)';
+      ctx.beginPath();
+      ctx.moveTo(pl, PY(v));
+      ctx.lineTo(cw - pr, PY(v));
+      ctx.stroke();
+      text(ctx, `${v} m`, pl - 6, PY(v), { align: 'right', base: 'middle', color: 'rgba(255,255,255,0.65)', size: 10.5 });
+    }
+    text(ctx, 'Wave height along the fetch', pl, topH + 16, { color: 'rgba(255,255,255,0.88)', size: 11.5 });
+    text(ctx, 'upwind shore', pl, ch - 5, { color: 'rgba(255,255,255,0.65)', size: 10.5 });
+    text(ctx, `${this.fmtKm(s.F / 1000)} km downwind`, cw - pr, ch - 5, { align: 'right', color: 'rgba(255,255,255,0.65)', size: 10.5 });
+
+    if (s.limit !== 'fetch') {
+      ctx.setLineDash([4, 4]);
+      ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+      ctx.beginPath();
+      ctx.moveTo(PX(s.Feff), pt - 4);
+      ctx.lineTo(PX(s.Feff), pb);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      const note = s.limit === 'time' ? 'out of time' : 'fully developed';
+      const right = PX(s.Feff) < cw * 0.6;
+      text(ctx, note, PX(s.Feff) + (right ? 6 : -6), pb - 6, { align: right ? 'left' : 'right', color: 'rgba(255,255,255,0.8)', size: 10.5 });
+    }
+    ctx.beginPath();
+    for (let i = 0; i <= 90; i++) {
+      const f = s.F * (i / 90) ** 2;
+      const h = this.grow(s.U, Math.min(f, s.Feff)).Hs;
+      if (i === 0) ctx.moveTo(PX(f), PY(h)); else ctx.lineTo(PX(f), PY(h));
+    }
+    ctx.strokeStyle = COL.buoy;
+    ctx.lineWidth = 2;
+    ctx.lineJoin = 'round';
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(PX(s.F), PY(s.Hs), 4.5, 0, TAU);
+    ctx.fillStyle = COL.buoy;
+    ctx.fill();
+    ctx.strokeStyle = COL.foam;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    text(ctx, `${s.Hs.toFixed(1)} m`, PX(s.F) - 8, PY(s.Hs) - 8, { align: 'right', color: '#ffffff', bold: true, size: 11.5 });
+  },
+};
+
+// ---------- App shell ----------
+const stations = { motion, dispersion: disp, shoaling: shoal, refraction: refr, rips: rip, wind };
+let active = 'motion';
+
+function activate(name) {
+  if (!stations[name]) return;
+  active = name;
+  for (const tab of document.querySelectorAll('.tabs button')) {
+    const on = tab.dataset.station === name;
+    tab.setAttribute('aria-selected', on);
+    $('panel-' + tab.dataset.station).hidden = !on;
+  }
+  if (stations[name].wake) stations[name].wake();
+  try { history.replaceState(null, '', '#' + name); } catch (err) { /* sandboxed frame */ }
+  dirty = true;
+}
+
+const tabs = [...document.querySelectorAll('.tabs button')];
+tabs.forEach((tab, i) => {
+  tab.addEventListener('click', () => activate(tab.dataset.station));
+  tab.addEventListener('keydown', ev => {
+    const d = ev.key === 'ArrowRight' ? 1 : ev.key === 'ArrowLeft' ? -1 : 0;
+    if (!d) return;
+    const next = tabs[(i + d + tabs.length) % tabs.length];
+    next.focus();
+    activate(next.dataset.station);
+  });
+});
+window.addEventListener('hashchange', () => activate(location.hash.slice(1)));
+
+function syncPlayButtons() {
+  for (const btn of document.querySelectorAll('.playbtn')) btn.textContent = playing ? 'Pause' : 'Play';
+}
+for (const btn of document.querySelectorAll('.playbtn')) {
+  btn.addEventListener('click', () => { playing = !playing; syncPlayButtons(); dirty = true; });
+}
+
+for (const st of Object.values(stations)) st.init();
+syncPlayButtons();
+activate(stations[location.hash.slice(1)] ? location.hash.slice(1) : 'motion');
+stations[active].draw();
+
+window.addEventListener('resize', () => { dirty = true; });
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { dirty = true; });
+
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+  const st = stations[active];
+  if (playing) st.step(dt);
+  if (playing || dirty) { st.draw(); dirty = false; }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+})();
+</script>
+</body>
+</html>
