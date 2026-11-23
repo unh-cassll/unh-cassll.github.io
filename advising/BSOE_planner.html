@@ -1,0 +1,1266 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BSOE Degree Planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fira+Sans:ital,wght@0,400;0,600;1,400&display=swap">
+<style>
+:root {
+  --bg: #f5f4f0;
+  --panel: #ffffff;
+  --ink: #1f1f24;
+  --muted: #62626c;
+  --line: #d9d6ce;
+  --soft: #eeece6;
+  --accent: #4c2882;
+  --ok: #1c6b2c;
+  --warn: #8a5a00;
+  --err: #a52a2a;
+  --g-ms: #2a52be;
+  --g-core: #4c2882;
+  --g-major: #367588;
+  --g-cap: #a52a2a;
+  --g-disc: #9a7524;
+  --g-te: #006611;
+  --g-extra: #6b6b73;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #17171b;
+    --panel: #212127;
+    --ink: #ececf0;
+    --muted: #a3a3ae;
+    --line: #37373f;
+    --soft: #2a2a31;
+    --accent: #b79cf0;
+    --ok: #6cc77c;
+    --warn: #e0b354;
+    --err: #ee8a8a;
+    --g-ms: #7f9cf0;
+    --g-core: #b79cf0;
+    --g-major: #6fb7cc;
+    --g-cap: #e08080;
+    --g-disc: #d9b56a;
+    --g-te: #5fc071;
+    --g-extra: #a3a3ae;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #17171b;
+  --panel: #212127;
+  --ink: #ececf0;
+  --muted: #a3a3ae;
+  --line: #37373f;
+  --soft: #2a2a31;
+  --accent: #b79cf0;
+  --ok: #6cc77c;
+  --warn: #e0b354;
+  --err: #ee8a8a;
+  --g-ms: #7f9cf0;
+  --g-core: #b79cf0;
+  --g-major: #6fb7cc;
+  --g-cap: #e08080;
+  --g-disc: #d9b56a;
+  --g-te: #5fc071;
+  --g-extra: #a3a3ae;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 15px/1.45 "Fira Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+h1, h2, h3, p, ul { margin: 0; }
+ul { padding: 0; list-style: none; }
+button, select, input { font: inherit; color: inherit; }
+
+button {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+button:hover { border-color: var(--accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+select, input[type="text"], input[type="number"] {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 5px 8px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* ---------- header ---------- */
+
+#top {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px 32px;
+  align-items: end;
+  padding: 20px 24px 12px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+.kicker { color: var(--muted); font-size: 13px; letter-spacing: 0.04em; text-transform: uppercase; }
+h1 { font-size: 26px; font-weight: 600; line-height: 1.2; }
+
+.stats { display: flex; gap: 28px; align-items: end; }
+.stat { display: grid; min-width: 96px; }
+.stat .num { font-size: 24px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.stat .num small { font-size: 14px; font-weight: 400; color: var(--muted); }
+.stat .lab { font-size: 12px; color: var(--muted); }
+.stat.err .num { color: var(--err); }
+.stat.warn .num { color: var(--warn); }
+.bar { height: 4px; background: var(--soft); border-radius: 2px; margin-top: 4px; overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--accent); }
+
+.tools { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.others { margin-left: auto; display: flex; flex-wrap: wrap; gap: 4px 16px; }
+.tools a { color: var(--accent); font-size: 14px; }
+.flash { grid-column: 1 / -1; min-height: 1.3em; font-size: 14px; color: var(--ok); }
+
+/* ---------- layout ---------- */
+
+main {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr) 300px;
+  gap: 20px;
+  padding: 20px 24px 40px;
+  align-items: start;
+}
+
+#tray, #detail, #checks {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px;
+}
+#side { display: grid; gap: 20px; position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow: auto; }
+
+h2 { font-size: 16px; font-weight: 600; }
+h3 { font-size: 13px; font-weight: 600; }
+.lede, .note, .meta { color: var(--muted); font-size: 13px; }
+.note { margin-top: 6px; }
+
+/* ---------- tray ---------- */
+
+.group { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line); }
+.group h3 { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.group h3 .count { margin-left: auto; font-weight: 400; color: var(--muted); font-size: 12px; }
+.dot { width: 10px; height: 10px; border-radius: 3px; background: var(--g); flex: none; }
+
+.g-ms { --g: var(--g-ms); }
+.g-core { --g: var(--g-core); }
+.g-major { --g: var(--g-major); }
+.g-cap { --g: var(--g-cap); }
+.g-disc { --g: var(--g-disc); }
+.g-te { --g: var(--g-te); }
+.g-extra { --g: var(--g-extra); }
+
+.row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; font-size: 13px; }
+.row.col { flex-direction: column; align-items: stretch; gap: 4px; }
+.row > span { color: var(--muted); }
+.row select, .row input { flex: 1 1 55%; width: 100%; font-size: 13px; }
+.row.col select { flex: none; }
+.items { display: grid; gap: 4px; margin-top: 4px; }
+.items.x { grid-template-columns: 1fr auto; align-items: center; }
+.inline { display: grid; grid-template-columns: 1fr 64px auto; gap: 6px; margin-top: 6px; }
+.inline input { font-size: 13px; }
+.mini { padding: 4px 8px; font-size: 12px; }
+
+.where {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 3px 8px;
+  border: 0;
+  border-left: 3px solid var(--g);
+  border-radius: 3px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  text-align: left;
+}
+.where:hover, .where.sel { background: var(--soft); color: var(--ink); }
+.where.bad span:last-child { color: var(--err); }
+
+details { margin-top: 12px; font-size: 13px; }
+summary { cursor: pointer; color: var(--accent); }
+details ul { margin-top: 6px; display: grid; gap: 6px; color: var(--muted); list-style: disc; padding-left: 18px; }
+
+/* ---------- chips ---------- */
+
+.chip {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0 8px;
+  width: 100%;
+  padding: 6px 10px;
+  text-align: left;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--g);
+  border-radius: 6px;
+  background: var(--panel);
+  cursor: grab;
+}
+.chip .code { font-weight: 600; font-size: 14px; }
+.chip .cr { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; align-self: center; }
+.chip .title { grid-column: 1 / -1; color: var(--muted); font-size: 12px; line-height: 1.3; }
+.chip .flag { grid-column: 1 / -1; color: var(--err); font-size: 12px; font-weight: 600; }
+.chip.open { border-style: dashed; border-left-style: solid; }
+.chip.bad { border-color: var(--err); border-left-color: var(--err); }
+.chip.sel { outline: 2px solid var(--accent); outline-offset: 1px; background: var(--soft); }
+
+/* ---------- term grid ---------- */
+
+.year { margin-bottom: 16px; }
+.year > h3 { color: var(--muted); letter-spacing: 0.04em; text-transform: uppercase; font-size: 12px; margin-bottom: 6px; }
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+.term {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px;
+  min-height: 96px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.term-h { display: flex; justify-content: space-between; align-items: baseline; font-weight: 600; font-size: 14px; }
+.load { font-weight: 400; color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+.load.warn { color: var(--warn); font-weight: 600; }
+.term-c { display: grid; gap: 6px; }
+.term.prior { min-height: 64px; border-style: dashed; }
+.term.prior .term-c { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
+
+.term.target { cursor: pointer; }
+.term.target.ok { border-color: var(--ok); }
+.term.target.early { border-color: var(--line); opacity: 0.75; }
+.term.over { border-color: var(--accent); background: var(--soft); }
+.hint {
+  margin-top: auto;
+  border: 1px dashed currentColor;
+  background: transparent;
+  font-size: 12px;
+  padding: 4px 8px;
+}
+.term.ok .hint { color: var(--ok); }
+.term.early .hint { color: var(--muted); }
+body.dragging #tray.over { border-color: var(--accent); }
+
+.grid-actions { display: flex; gap: 8px; }
+.grid-actions button { font-size: 13px; }
+
+/* ---------- detail and checks ---------- */
+
+.dtitle { margin-top: 2px; }
+.meta { margin-top: 4px; }
+#detail h3, #checks h3 { margin-top: 14px; margin-bottom: 6px; }
+#detail > button { margin-top: 12px; font-size: 13px; }
+
+.pre { display: grid; gap: 6px; font-size: 13px; }
+.pre li { display: grid; grid-template-columns: 58px 1fr; gap: 8px; }
+.pre .mark { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; padding-top: 2px; }
+.pre .ok .mark { color: var(--ok); }
+.pre .no .mark { color: var(--err); }
+.pre i { color: var(--muted); }
+
+.issues { display: grid; gap: 6px; font-size: 13px; }
+.issues li { padding-left: 10px; border-left: 3px solid currentColor; }
+.issues li, .issues .link { color: var(--ink); }
+.issues.err li { border-left-color: var(--err); }
+.issues.warn li { border-left-color: var(--warn); }
+.issues.todo li { border-left-color: var(--line); }
+h3.err { color: var(--err); }
+h3.warn { color: var(--warn); }
+.link { border: 0; background: none; padding: 0; text-align: left; font-size: inherit; }
+.link:hover { text-decoration: underline; }
+.allgood { margin-top: 8px; color: var(--ok); font-size: 14px; }
+
+.disc { display: grid; gap: 4px; font-size: 13px; }
+.disc li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; }
+.disc li span:first-child { padding-left: 1.3em; text-indent: -1.3em; }
+.disc li span:last-child { color: var(--muted); text-align: right; max-width: 130px; }
+.disc .no span:last-child { color: var(--warn); }
+.disc .ok span:first-child::before { content: "\2713\00a0"; color: var(--ok); }
+.disc .no span:first-child::before { content: "\25CB\00a0"; color: var(--muted); }
+
+footer { padding: 0 24px 32px; color: var(--muted); font-size: 13px; max-width: 900px; }
+
+/* ---------- narrow screens ---------- */
+
+@media (max-width: 1180px) {
+  main { grid-template-columns: 280px minmax(0, 1fr); }
+  #side { grid-column: 1 / -1; position: static; max-height: none; grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 760px) {
+  #top { grid-template-columns: 1fr; padding: 16px; }
+  .stats { gap: 16px; }
+  .others { margin-left: 0; }
+  main { grid-template-columns: 1fr; padding: 16px; }
+  #side { grid-template-columns: 1fr; }
+  .pair { grid-template-columns: 1fr; }
+  footer { padding: 0 16px 24px; }
+}
+
+/* ---------- print ---------- */
+
+@media print {
+  :root { --bg: #fff; --panel: #fff; --ink: #000; --muted: #444; --line: #bbb; --soft: #fff; }
+  body { font-size: 11px; }
+  .tools, .flash, #tray, #detail, .grid-actions, .hint, details { display: none !important; }
+  #top { padding: 0 0 8px; border: 0; }
+  main { display: block; padding: 0; }
+  #side { position: static; max-height: none; display: block; }
+  #checks { border: 0; padding: 8px 0 0; }
+  .year { break-inside: avoid; margin-bottom: 8px; }
+  .term { min-height: 0; padding: 6px; }
+  .chip { padding: 2px 6px; grid-template-columns: 70px 1fr auto; }
+  .chip .title { grid-column: 2; grid-row: 1; }
+  .chip .cr { grid-column: 3; }
+  footer { padding: 8px 0 0; }
+}
+
+</style>
+</head>
+<body>
+<header id="top"></header>
+<main>
+  <aside id="tray" aria-label="Requirements"></aside>
+  <section id="grid" aria-label="Terms"></section>
+  <aside id="side">
+    <div id="detail" aria-live="polite"></div>
+    <div id="checks"></div>
+  </aside>
+</main>
+<footer>
+  <p>Unofficial planning aid built from the 2026-2027 undergraduate catalog. The catalog, Degree Works, and your advisor are the authority. Course offerings by semester aren't checked here. Your plan is saved in this browser only: use Save file to keep a copy or share it.</p>
+</footer>
+<input type="file" id="file" accept="application/json,.json" hidden>
+<script>
+// Course table shared by both planners. Source: 2026-2027 UNH undergraduate catalog.
+// pre syntax: & (and), | (or), parentheses, trailing ~ (may be taken concurrently).
+// One entry per line. manual: reason a prerequisite differs from the catalog (see tools/catalog.py check).
+window.COURSES = {
+  // Math and science
+  'MATH 425': { t: 'Calculus I', cr: 4, pre: '', note: 'Entry by MATH 418 (C or better) or ALEKS score of 80. Honors section: MATH 425H.' },
+  'MATH 426': { t: 'Calculus II', cr: 4, pre: 'MATH 425', note: 'Honors section: MATH 426H.' },
+  'MATH 527': { t: 'Differential Equations with Linear Algebra', cr: 4, pre: 'MATH 426' },
+  'MATH 528': { t: 'Multidimensional Calculus', cr: 4, pre: 'MATH 426' },
+  'MATH 525': { t: 'Linearity I', cr: 6, pre: 'MATH 426', note: 'MATH 525 + MATH 526 replace MATH 527 + MATH 528 and count as one technical elective.' },
+  'MATH 526': { t: 'Linearity II', cr: 6, pre: 'MATH 525', note: 'MATH 525 + MATH 526 replace MATH 527 + MATH 528 and count as one technical elective.' },
+  'MATH 644': { t: 'Statistics for Engineers and Scientists', cr: 4, pre: 'MATH 426~' },
+  'PHYS 407': { t: 'General Physics I', cr: 4, pre: 'MATH 425~', note: 'Honors and studio sections: PHYS 407H, PHYS 407S.' },
+  'PHYS 408': { t: 'General Physics II', cr: 4, pre: 'PHYS 407 & MATH 426~', note: 'Honors and studio sections: PHYS 408H, PHYS 408S.' },
+  'CHEM 405': { t: 'Chemical Principles for Engineers', cr: 4, pre: '' },
+  'CHEM 403': { t: 'General Chemistry I', cr: 4, pre: '' },
+  'CHEM 404': { t: 'General Chemistry II', cr: 4, pre: 'CHEM 403' },
+
+  // General education
+  'ENGL 401': { t: 'First-Year Writing', cr: 4, pre: '', note: 'Discovery Writing Skills. Take in the first year.' },
+  'ECON 402': { t: 'Principles of Economics (Micro)', cr: 4, pre: '', note: 'Discovery Social Science.' },
+  'NR 411': { t: 'Environmental and Resource Economics Perspectives', cr: 4, pre: '', note: 'Discovery Social Science.' },
+
+  // Engineering core
+  'IAM 550': { t: 'Introduction to Engineering Computing', cr: 4, pre: 'MATH 426~' },
+  'ECE 537': { t: 'Introduction to Electrical Engineering', cr: 4, pre: 'PHYS 408 & MATH 527~' },
+  'ME 441': { t: 'Introduction to Engineering Design and Solid Modeling', cr: 4, pre: 'MATH 418 | MATH 425~', note: 'Satisfies Discovery Inquiry.' },
+  'ME 477': { t: 'Introduction to Solid Modeling', cr: 1, pre: '', note: 'Permission required to take in place of ME 441. Does not satisfy Discovery Inquiry: a separate Inquiry course is needed.' },
+  'ME 503': { t: 'Thermodynamics', cr: 3, pre: 'PHYS 407 & (CHEM 405~ | CHEM 403~) & (MATH 528~ | MATH 526~)' },
+  'ME 525': { t: 'Statics', cr: 4, pre: 'PHYS 407 & MATH 426', note: 'Grade minimums: C in one of PHYS 407 and MATH 426, C+ in the other.' },
+  'ME 526': { t: 'Mechanics of Materials', cr: 3, pre: 'ME 525 | CEE 500' },
+  'ME 561': { t: 'Introduction to Materials Science', cr: 4, pre: 'MATH 425 & (CHEM 403 | CHEM 405)' },
+  'ME 603': { t: 'Heat Transfer', cr: 3, pre: 'MATH 527 & ME 608' },
+  'ME 608': { t: 'Fluid Dynamics', cr: 3, pre: 'ME 503 & MATH 527~ & IAM 550~' },
+  'ME 627': { t: 'Dynamics', cr: 3, pre: 'ME 525 | CEE 500' },
+  'ME 643': { t: 'Machine Design', cr: 3, pre: '(ME 526 | CEE 501) & ME 561 & ME 627' },
+  'ME 646': { t: 'Experimental Measurement and Data Analysis', cr: 4, pre: '(ME 526 | CEE 501) & ME 608~' },
+  'ME 670': { t: 'Systems Modeling, Simulation, and Control', cr: 4, pre: 'ECE 537 & ME 627 & MATH 527' },
+  'ME 705': { t: 'Thermal System Analysis and Design', cr: 4, pre: 'ME 503 & ME 608~', note: 'ME 608 is a corequisite.' },
+  'ME 747': { t: 'Experimental Measurement and Modeling of Complex Systems', cr: 4, pre: 'ME 646 & ME 670' },
+  'ME 755': { t: 'Senior Design Project I', cr: 2, pre: '', note: 'Discovery senior capstone with ME 756.' },
+  'ME 756': { t: 'Senior Design Project II', cr: 2, pre: 'ME 755' },
+  'TECH 797': { t: 'Undergraduate Ocean Research Project', cr: 2, pre: '', note: 'Two semesters, 2 credits each. Discovery senior capstone.' },
+  'CEE 500': { t: 'Statics for Civil Engineers', cr: 3, pre: 'PHYS 407 & MATH 426~' },
+  'CEE 501': { t: 'Strength of Materials', cr: 3, pre: '(CEE 500 | ME 525) & MATH 426' },
+  'CEE 650': { t: 'Fluid Mechanics', cr: 4, pre: 'PHYS 407' },
+
+  // Ocean engineering
+  'OE 400': { t: 'Ocean Engineering Seminar', cr: 1, pre: '' },
+  'OE 401': { t: 'Ocean Engineering Seminar', cr: 1, pre: '' },
+  'OE 490': { t: 'Introduction to Ocean Engineering', cr: 4, pre: 'PHYS 407~', note: 'PHYS 407 is a corequisite.' },
+  'OE 610': { t: 'Ocean Instrumentation Lab', cr: 4, pre: 'MATH 527 & MATH 528 & ECE 537 & IAM 550' },
+  'OE 754': { t: 'Ocean Waves and Tides', cr: 4, pre: 'PHYS 407 & MATH 527 & MATH 528' },
+  'OE 757': { t: 'Coastal Engineering and Processes', cr: 3, pre: 'CEE 650 | ME 608' },
+  'OE 758': { t: 'Design of Ocean Structures', cr: 3, pre: '(ME 526 | CEE 501 | CEE 502) & (ME 608 | CEE 650) & OE 754 & MATH 527', manual: 'Catalog lists CEE 502. CEE 501 added as the likely intent.' },
+  'OE 765': { t: 'Underwater Acoustics', cr: 3, pre: 'PHYS 408 & MATH 527' },
+  'ESCI 501': { t: 'Introduction to Oceanography', cr: 4, pre: '', note: 'Discovery Inquiry and Physical Science (with lab).' },
+  'ESCI 720': { t: 'Ocean Measurements Lab', cr: 4, pre: '' },
+
+  // Technical electives: ME and IAM
+  'ME 701': { t: 'Transport and Mixing in the Environment', cr: 3, pre: 'ME 608 | CEE 650 | CHE 601 | ESCI 654' },
+  'ME 706': { t: 'Renewable Energy: Physical and Engineering Principles', cr: 3, pre: 'ME 608' },
+  'ME 707': { t: 'Analytical Fluid Dynamics', cr: 4, pre: 'ME 608' },
+  'ME 709': { t: 'Computational Fluid Dynamics', cr: 3, pre: '', note: 'Catalog lists no prerequisite. Check with the instructor.' },
+  'ME 710': { t: 'Experimental Fluid Dynamics', cr: 4, pre: 'ME 603 & ME 608 & ME 646' },
+  'ME 712': { t: 'Waves in Fluids', cr: 3, pre: 'ME 608' },
+  'ME 717': { t: 'Marine Robotics and Applications', cr: 3, pre: 'ME 670' },
+  'ME 726': { t: 'Fracture Mechanics', cr: 4, pre: 'ME 526 & ME 561' },
+  'ME 727': { t: 'Advanced Mechanics of Solids', cr: 4, pre: 'ME 526' },
+  'ME 742': { t: 'Materials Processing in Manufacturing', cr: 4, pre: 'ME 526 & ME 561' },
+  'ME 743': { t: 'Satellite Systems, Dynamics, and Control', cr: 3, pre: 'ME 670' },
+  'ME 772': { t: 'Control Systems', cr: 4, pre: 'ME 747' },
+  'ME 777': { t: 'Computer Aided Engineering', cr: 4, pre: '(ME 526 | CEE 501) & ME 627 & ME 603 & ME 608' },
+  'ME 786': { t: 'Introduction to Finite Element Analysis', cr: 4, pre: 'ME 526' },
+  'IAM 751': { t: 'Introduction to High-Performance Computing', cr: 4, pre: '' },
+
+  // Technical electives: OE
+  'OE 677': { t: 'Seamanship and Marine Weather for Ocean Engineers and Scientists', cr: 2, pre: '' },
+  'OE 717': { t: 'Marine Robotics and Applications', cr: 3, pre: 'ME 670~', note: 'ME 670 is a corequisite.' },
+  'OE 720': { t: 'Design of Recirculating Aquaculture Systems', cr: 3, pre: '(MATH 426 | MATH 424B) & (PHYS 407 | (PHYS 401 & PHYS 402)) & (CHEM 405 | (CHEM 403 & CHEM 404))' },
+  'OE 753': { t: 'Ocean Hydrodynamics', cr: 3, pre: 'MATH 527 & (CEE 650 | ME 608)' },
+  'OE 770': { t: 'Geodesy for Ocean Mapping', cr: 3, pre: 'MATH 426 & (PHYS 407 | PHYS 401)' },
+  'OE 771': { t: 'Positioning for Ocean Mapping', cr: 4, pre: '(ESCI 770 | OE 770) & MATH 426 & (PHYS 407 | PHYS 401)' },
+  'OE 774': { t: 'Integrated Seabed Mapping Systems', cr: 4, pre: '' },
+
+  // Technical electives: statistics, other CEPS, outside CEPS
+  'ESCI 764': { t: 'Spectral Analysis of Geophysical Time Series Data', cr: 4, pre: 'MATH 426' },
+  'ESCI 701': { t: 'Quantitative Methods in Earth Sciences', cr: 4, pre: 'MATH 426 & (ESCI 401 | ESCI 402 | ESCI 409 | ESCI 501 | ESCI 514 | OE 490)' },
+  'CS 410C': { t: 'Introduction to Scientific Programming/C', cr: 4, pre: '' },
+  'CS 410P': { t: 'Introduction to Scientific Programming/Python', cr: 4, pre: '' },
+  'ECE 543': { t: 'Introduction to Digital Systems', cr: 4, pre: '' },
+  'TECH 750': { t: 'Intellectual Asset Management for Engineers and Scientists', cr: 4, pre: '' },
+  'TECH 780': { t: 'Intellectual Property Law for Engineers & Scientists', cr: 3, pre: '' },
+  'MARI 705': { t: 'Introduction to Marine Policy: Understanding US Ocean, Coastal and Great Lakes Policy', cr: 3, pre: '' },
+  'MARI 730': { t: 'Research Diving Technologies', cr: 4, pre: '' },
+  'MARI 735': { t: 'Advanced SCUBA', cr: 4, pre: '' },
+  'MEFB 702': { t: 'Sustainable Marine Fisheries', cr: 4, pre: '' },
+  'MEFB 755': { t: 'Biological Oceanography', cr: 3, pre: '(BIOL 411 | BIOL 413) & (BIOL 412 | BIOL 414)' },
+  'ZOOL 610': { t: 'Principles of Aquaculture', cr: 4, pre: '(BIOL 411 | BIOL 413) & (BIOL 412 | BIOL 414)' },
+};
+
+</script>
+<script>
+window.PLANNERS = [{"id": "BSME", "name": "B.S. in Mechanical Engineering", "href": "BSME_planner.html"}, {"id": "BSOE", "name": "B.S. in Ocean Engineering", "href": "BSOE_planner.html"}];
+// B.S. in Ocean Engineering. Source: 2026-2027 UNH undergraduate catalog.
+// sample: term index per course in the chosen option (1 = Year 1 Fall ... 8 = Year 4 Spring).
+(function () {
+  const OUTSIDE = ['MARI 705', 'MARI 730', 'MARI 735', 'MEFB 702', 'MEFB 755', 'ZOOL 610', 'TECH 750', 'TECH 780'];
+
+  window.PROGRAM = {
+    id: 'BSOE',
+    name: 'B.S. in Ocean Engineering',
+    catalog: '2026-2027',
+    minCredits: 128,
+
+    // Courses accepted in place of a listed prerequisite
+    equiv: { 'MATH 527': ['MATH 526'], 'MATH 528': ['MATH 526'] },
+
+    groups: [
+      { id: 'ms', label: 'Math and science' },
+      { id: 'core', label: 'Engineering core' },
+      { id: 'major', label: 'Ocean engineering' },
+      { id: 'cap', label: 'Senior capstone' },
+      { id: 'disc', label: 'Discovery and writing' },
+      { id: 'te', label: 'Technical electives' },
+      { id: 'extra', label: 'Other courses' },
+    ],
+
+    reqs: [
+      { id: 'calc1', group: 'ms', options: [['MATH 425']], sample: [1] },
+      { id: 'calc2', group: 'ms', options: [['MATH 426']], sample: [2] },
+      { id: 'math', group: 'ms', label: 'Math sequence', options: [['MATH 528', 'MATH 527'], ['MATH 525', 'MATH 526']], sample: [3, 4] },
+      { id: 'phys1', group: 'ms', options: [['PHYS 407']], sample: [1] },
+      { id: 'phys2', group: 'ms', options: [['PHYS 408']], sample: [2] },
+      { id: 'chem', group: 'ms', label: 'Chemistry', options: [['CHEM 405'], ['CHEM 403', 'CHEM 404']], sample: [3, 4] },
+      { id: 'ocean', group: 'ms', options: [['ESCI 501']], sample: [3] },
+
+      { id: 'statics', group: 'core', label: 'Statics', options: [['ME 525'], ['CEE 500']], sample: [3] },
+      { id: 'comp', group: 'core', options: [['IAM 550']], sample: [4] },
+      { id: 'thermo', group: 'core', options: [['ME 503']], sample: [4] },
+      { id: 'mech', group: 'core', label: 'Mechanics of materials', options: [['ME 526'], ['CEE 501']], sample: [4] },
+      { id: 'ee', group: 'core', options: [['ECE 537']], sample: [5] },
+      { id: 'fluids', group: 'core', label: 'Fluids', options: [['ME 608'], ['CEE 650']], sample: [5] },
+      { id: 'dyn', group: 'core', options: [['ME 627']], sample: [5] },
+
+      { id: 'sem1', group: 'major', options: [['OE 400']], sample: [1] },
+      { id: 'intro', group: 'major', options: [['OE 490']], sample: [2] },
+      { id: 'sem2', group: 'major', options: [['OE 401']], sample: [4] },
+      { id: 'waves', group: 'major', options: [['OE 754']], sample: [5] },
+      { id: 'instr', group: 'major', options: [['OE 610']], sample: [6] },
+      { id: 'coastal', group: 'major', options: [['OE 757']], sample: [6] },
+      { id: 'struct', group: 'major', options: [['OE 758']], sample: [6] },
+      { id: 'meas', group: 'major', options: [['ESCI 720']], sample: [7] },
+      { id: 'acoust', group: 'major', options: [['OE 765']], sample: [7] },
+
+      { id: 'capstone', group: 'cap', options: [['TECH 797', 'TECH 797']], sample: [7, 8] },
+
+      { id: 'writing', group: 'disc', options: [['ENGL 401']], sample: [2] },
+      { id: 'econ', group: 'disc', label: 'Social Science', options: [['ECON 402'], ['NR 411']], sample: [1] },
+    ],
+
+    discovery: [
+      { id: 'D-HUMA', label: 'Humanities', sample: 1 },
+      { id: 'D-FPA', label: 'Fine and Performing Arts', sample: 2 },
+      { id: 'D-BS', label: 'Biological Science', sample: 7 },
+      { id: 'D-HP', label: 'Historical Perspectives', sample: 8 },
+      { id: 'D-WC', label: 'World Cultures', sample: 8 },
+    ],
+
+    discoveryChecks: [
+      { label: 'Writing Skills', codes: ['ENGL 401'] },
+      { label: 'Quantitative Reasoning', codes: ['MATH 425'] },
+      { label: 'Inquiry (first two years)', codes: ['ESCI 501'], byTerm: 4, miss: 'ESCI 501' },
+      { label: 'Physical Science with lab', codes: ['PHYS 407', 'CHEM 405', 'CHEM 404'] },
+      { label: 'Social Science', codes: ['ECON 402', 'NR 411'] },
+      { label: 'Humanities', slot: 'D-HUMA' },
+      { label: 'Fine and Performing Arts', slot: 'D-FPA' },
+      { label: 'Biological Science', slot: 'D-BS' },
+      { label: 'Historical Perspectives', slot: 'D-HP' },
+      { label: 'World Cultures', slot: 'D-WC' },
+      { label: 'Environment, Technology, and Society', waived: 'Met by the B.S. in Ocean Engineering' },
+      { label: 'Senior capstone', codes: ['TECH 797'] },
+    ],
+
+    te: {
+      lists: {
+        stats: { label: 'Statistics', codes: ['ESCI 764', 'MATH 644', 'ESCI 701'] },
+        oe: { label: 'Ocean engineering', codes: ['OE 677', 'OE 717', 'OE 720', 'OE 753', 'OE 770', 'OE 771', 'OE 774'] },
+        me: { label: 'ME and IAM (examples)', codes: ['ME 603', 'ME 646', 'ME 670', 'ME 701', 'ME 706', 'ME 707', 'ME 709', 'ME 712', 'ME 717', 'ME 727', 'ME 786', 'IAM 751'] },
+        cs: { label: 'Programming (400-level exception)', codes: ['CS 410C', 'CS 410P'] },
+        outside: { label: 'Approved outside CEPS', codes: OUTSIDE },
+      },
+      slots: [
+        { id: 'TE1', label: 'Technical elective 1: statistics', lists: ['stats'], cr: 4, sample: 6 },
+        { id: 'TE2', label: 'Technical elective 2', lists: ['stats', 'oe', 'me', 'cs', 'outside'], custom: true, cr: 4, sample: 7 },
+        { id: 'TE3', label: 'Technical elective 3', lists: ['stats', 'oe', 'me', 'cs', 'outside'], custom: true, sample: 8 },
+        { id: 'TE4', label: 'Technical elective 4', lists: ['stats', 'oe', 'me', 'cs', 'outside'], custom: true, sample: 8 },
+      ],
+      // Linearity sequence fills one elective slot
+      linearity: { req: 'math', option: 1, slot: 'TE4', cr: 4, text: 'Filled by MATH 525 + MATH 526 (counts as one technical elective).' },
+
+      // sel: [{slot, code, cr, custom, linearity}] for filled slots
+      check(sel, nSlots) {
+        const out = [];
+        const low = sel.filter(s => s.custom && !/\b[6-9]\d\d/.test(s.code)).length;
+        if (low) out.push('Technical electives must be CEPS courses at the 600 level or higher (exceptions: CS 410C, CS 410P, and the approved outside list).');
+        if (sel.length === nSlots) {
+          const total = sel.reduce((a, s) => a + s.cr, 0);
+          if (total < 14) out.push(`Technical electives total ${total} credits. The minimum is 14.`);
+          if (!sel.some(s => s.cr >= 4)) out.push('At least one technical elective must be 4 credits.');
+        }
+        return out;
+      },
+    },
+
+    rules: [
+      'Four technical electives. Total of at least 14 credits.',
+      'One must be an approved statistics course: ESCI 764, MATH 644, or ESCI 701.',
+      'The rest are CEPS courses at the 600 level or higher. CS 410C and CS 410P are also accepted.',
+      'Accepted from outside CEPS: MARI 705, MARI 730, MARI 735, MEFB 702, MEFB 755, ZOOL 610, TECH 750, TECH 780.',
+      'MATH 525 + MATH 526 may replace MATH 527 + MATH 528 and then also count as one technical elective.',
+    ],
+
+    policies: [
+      'Predictor courses: PHYS 407, MATH 426, ME 525 (or CEE 500), ME 526 (or CEE 501).',
+      'To continue past the first semester of junior year: GPA of at least 2.00 in the predictor courses, with only one grade below C-.',
+      'Graduation: 2.0 GPA overall and 2.0 in engineering and science courses taken after the start of junior year.',
+      'At least 32 credits must be taken at UNH.',
+    ],
+  };
+})();
+
+</script>
+<script>
+(function () {
+  'use strict';
+
+  const P = window.PROGRAM;
+  const C = window.COURSES;
+  const KEY = `degree-planner-${P.id}-${P.catalog}`;
+  const HAS_DOM = typeof document !== 'undefined';
+
+  // ---------------------------------------------------------------- state
+
+  function fresh() {
+    return { v: 1, nTerms: 8, choice: {}, te: {}, disc: {}, extra: [], place: {}, n: 0 };
+  }
+
+  let S = fresh();
+  let sel = null;      // selected chip id
+  let dragId = null;   // chip id being dragged
+  let flash = '';      // one-line status message
+
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* storage unavailable */ }
+  }
+
+  function load() {
+    try {
+      const raw = localStorage.getItem(KEY);
+      if (raw) adopt(JSON.parse(raw));
+    } catch (e) { /* storage unavailable */ }
+  }
+
+  function adopt(obj) {
+    if (!obj || typeof obj !== 'object' || !obj.place) return false;
+    S = Object.assign(fresh(), obj);
+    return true;
+  }
+
+  // ---------------------------------------------------------------- prerequisites
+
+  const preCache = {};
+
+  // Parse "A & (B~ | C)" into {op, kids} / {c, co} nodes
+  function parsePre(s) {
+    if (!s) return null;
+    if (preCache[s]) return preCache[s];
+    const tok = s.match(/\(|\)|&|\||[A-Z]{2,4} \d{3}[A-Z]?~?/g) || [];
+    let i = 0;
+    const atom = () => {
+      if (tok[i] === '(') { i++; const n = or(); i++; return n; }
+      const t = tok[i++];
+      return { c: t.replace('~', ''), co: t.endsWith('~') };
+    };
+    const and = () => {
+      const k = [atom()];
+      while (tok[i] === '&') { i++; k.push(atom()); }
+      return k.length > 1 ? { op: 'and', kids: k } : k[0];
+    };
+    const or = () => {
+      const k = [and()];
+      while (tok[i] === '|') { i++; k.push(and()); }
+      return k.length > 1 ? { op: 'or', kids: k } : k[0];
+    };
+    return (preCache[s] = or());
+  }
+
+  // Honors and studio sections count as the base course
+  function norm(code) {
+    return code.trim().toUpperCase()
+      .replace(/^(PHYS 40[78])S$/, '$1')
+      .replace(/^([A-Z]+ \d{3})H$/, '$1');
+  }
+
+  // Earliest term in which a course (or an accepted equivalent) is placed
+  function leafTerm(code, map) {
+    let t = map[code];
+    for (const e of (P.equiv[code] || [])) {
+      if (map[e] !== undefined && (t === undefined || map[e] < t)) t = map[e];
+    }
+    return t;
+  }
+
+  function check(n, term, map) {
+    if (n.op === 'and') return n.kids.every(k => check(k, term, map));
+    if (n.op === 'or') return n.kids.some(k => check(k, term, map));
+    const t = leafTerm(n.c, map);
+    return t !== undefined && (t < term || (n.co && t <= term));
+  }
+
+  function exprText(n) {
+    if (n.op === 'and') return '(' + n.kids.map(exprText).join(' and ') + ')';
+    if (n.op === 'or') return n.kids.map(exprText).join(' or ');
+    return n.c + (n.co ? ' (same term is fine)' : '');
+  }
+
+  function failText(n, term, map) {
+    if (n.op === 'and') {
+      return n.kids.filter(k => !check(k, term, map)).map(k => failText(k, term, map)).join(', and ');
+    }
+    return exprText(n);
+  }
+
+  // ---------------------------------------------------------------- chips
+
+  function optionOf(req) {
+    return req.options[S.choice[req.id] || 0] || req.options[0];
+  }
+
+  function lockedSlot() {
+    const L = P.te.linearity;
+    return L && (S.choice[L.req] || 0) === L.option ? L.slot : null;
+  }
+
+  function teCourse(slot) {
+    const t = S.te[slot.id];
+    if (!t) return null;
+    if (t.custom) {
+      return { code: norm(t.code || '') || 'Other course', title: t.title || '', cr: +t.cr || 3, custom: true, pre: '' };
+    }
+    const c = C[t.code];
+    return c ? { code: t.code, title: c.t, cr: c.cr, pre: c.pre, note: c.note } : null;
+  }
+
+  // Every placeable item in the plan
+  function chips() {
+    const out = [];
+    for (const req of P.reqs) {
+      optionOf(req).forEach((code, i) => {
+        const c = C[code];
+        out.push({ id: `${req.id}:${i}`, kind: 'req', group: req.group, req, code, title: c.t, cr: c.cr, pre: c.pre, note: c.note, sample: req.sample[Math.min(i, req.sample.length - 1)] });
+      });
+    }
+    for (const d of P.discovery) {
+      out.push({ id: d.id, kind: 'disc', group: 'disc', code: 'Discovery', title: d.label, detail: S.disc[d.id] || '', cr: 4, pre: '', sample: d.sample });
+    }
+    const lock = lockedSlot();
+    for (const slot of P.te.slots) {
+      if (slot.id === lock) continue;
+      const c = teCourse(slot);
+      out.push(c
+        ? { id: slot.id, kind: 'te', group: 'te', slot, filled: true, code: c.code, title: c.title, cr: c.cr, pre: c.pre, note: c.note, custom: c.custom, sample: slot.sample }
+        : { id: slot.id, kind: 'te', group: 'te', slot, filled: false, code: 'Tech elective', title: slot.label.replace(/^Technical elective /, '#'), cr: slot.cr || 3, crText: slot.cr ? String(slot.cr) : '3-4', pre: '', sample: slot.sample });
+    }
+    for (const x of S.extra) {
+      out.push({ id: x.id, kind: 'extra', group: 'extra', code: norm(x.code), title: x.title || '', cr: +x.cr || 0, pre: '' });
+    }
+    return out;
+  }
+
+  function termLabel(t, short) {
+    if (t === 0) return 'Prior credit';
+    const y = Math.ceil(t / 2);
+    const s = t % 2 ? 'Fall' : 'Spring';
+    return short ? `Y${y} ${s}` : `Year ${y} ${s}`;
+  }
+
+  function placedMap(list) {
+    const map = {};
+    for (const ch of list) {
+      const t = S.place[ch.id];
+      if (t === undefined || ch.kind === 'disc' || (ch.kind === 'te' && !ch.filled)) continue;
+      const c = norm(ch.code);
+      if (map[c] === undefined || t < map[c]) map[c] = t;
+    }
+    return map;
+  }
+
+  // Drop placements for chips or terms that no longer exist
+  function prune(list) {
+    const ids = new Set(list.map(c => c.id));
+    for (const id of Object.keys(S.place)) {
+      if (!ids.has(id) || S.place[id] > S.nTerms) delete S.place[id];
+    }
+    if (sel && !ids.has(sel)) sel = null;
+  }
+
+  // ---------------------------------------------------------------- analysis
+
+  function analyze() {
+    const list = chips();
+    prune(list);
+    const map = placedMap(list);
+    const errors = [], warns = [], todos = [];
+    const bad = {};
+    const load = new Array(S.nTerms + 1).fill(0);
+    let total = 0, placed = 0;
+
+    for (const ch of list) {
+      const t = S.place[ch.id];
+      if (t === undefined) continue;
+      placed++;
+      load[t] += ch.cr;
+      total += ch.cr;
+      if (t > 0 && ch.pre) {
+        const n = parsePre(ch.pre);
+        if (!check(n, t, map)) {
+          bad[ch.id] = true;
+          errors.push({ chip: ch.id, text: `${ch.code} in ${termLabel(t)} needs ${failText(n, t, map)} first.` });
+        }
+      }
+    }
+
+    const unplaced = list.length - placed;
+    if (unplaced) todos.push({ text: `${unplaced} of ${list.length} courses are not placed in a term yet.` });
+
+    // Technical electives
+    const lock = lockedSlot();
+    const teSel = [];
+    for (const slot of P.te.slots) {
+      if (slot.id === lock) {
+        teSel.push({ slot: slot.id, code: 'MATH 525/526', cr: P.te.linearity.cr, linearity: true });
+        continue;
+      }
+      const c = teCourse(slot);
+      if (c) teSel.push({ slot: slot.id, code: c.code, cr: c.cr, custom: !!c.custom });
+      else todos.push({ chip: slot.id, text: `${slot.label}: no course chosen.` });
+    }
+    const seen = {};
+    for (const s of teSel) {
+      if (seen[s.code]) warns.push({ chip: s.slot, text: `${s.code} is chosen for two technical electives.` });
+      seen[s.code] = true;
+      if (list.some(ch => ch.kind === 'req' && ch.code === s.code)) {
+        warns.push({ chip: s.slot, text: `${s.code} is already a required course. It can't also count as a technical elective.` });
+      }
+    }
+    for (const text of P.te.check(teSel, P.te.slots.length)) warns.push({ text });
+
+    // Discovery
+    const disc = P.discoveryChecks.map(d => {
+      if (d.waived) return { label: d.label, ok: true, text: d.waived };
+      if (d.slot) {
+        const t = S.place[d.slot];
+        return { label: d.label, ok: t !== undefined, text: t !== undefined ? (S.disc[d.slot] ? S.disc[d.slot] + ', ' : '') + termLabel(t, true) : 'Not placed' };
+      }
+      const hit = d.codes.filter(c => map[c] !== undefined).sort((a, b) => map[a] - map[b])[0];
+      if (!hit) return { label: d.label, ok: false, text: d.miss ? `Needs ${d.miss}` : 'Not placed' };
+      if (d.byTerm && map[hit] > d.byTerm) {
+        warns.push({ text: `${hit} satisfies Inquiry and belongs in the first two years. It is in ${termLabel(map[hit])}.` });
+        return { label: d.label, ok: false, text: `${hit} is in ${termLabel(map[hit], true)}` };
+      }
+      return { label: d.label, ok: true, text: `${hit}, ${termLabel(map[hit], true)}` };
+    });
+
+    // Term loads
+    for (let t = 1; t <= S.nTerms; t++) {
+      if (load[t] > 20) warns.push({ text: `${termLabel(t)} has ${load[t]} credits. Above 20 is a heavy load: check the overload policy.` });
+      else if (load[t] > 0 && load[t] < 12) warns.push({ text: `${termLabel(t)} has ${load[t]} credits. Full-time status needs 12.` });
+    }
+
+    if (!unplaced && total < P.minCredits) {
+      todos.push({ text: `The plan has ${total} credits. The degree needs ${P.minCredits}.` });
+    }
+
+    return { list, map, errors, warns, todos, bad, load, total, placed, disc, teSel };
+  }
+
+  function loadSample() {
+    S.place = {};
+    for (const ch of chips()) {
+      if (ch.sample) S.place[ch.id] = ch.sample;
+    }
+  }
+
+  function summaryText(A) {
+    const lines = [`${P.name} plan (${P.catalog} catalog)`, ''];
+    for (let t = 0; t <= S.nTerms; t++) {
+      const here = A.list.filter(ch => S.place[ch.id] === t);
+      if (!here.length) continue;
+      lines.push(`${termLabel(t)} (${A.load[t]} cr)`);
+      for (const ch of here) {
+        const name = ch.kind === 'disc' ? `Discovery: ${ch.title}${ch.detail ? ' (' + ch.detail + ')' : ''}`
+          : ch.kind === 'te' && !ch.filled ? `Technical elective ${ch.title}`
+            : `${ch.code} ${ch.title}`;
+        lines.push(`  ${name.trim()}, ${ch.crText || ch.cr} cr`);
+      }
+      lines.push('');
+    }
+    lines.push(`Total: ${A.total} of ${P.minCredits} credits`);
+    const open = [...A.errors, ...A.warns, ...A.todos];
+    if (open.length) {
+      lines.push('', 'Open items:');
+      for (const o of open) lines.push(`  - ${o.text}`);
+    }
+    return lines.join('\n');
+  }
+
+  // Test hook (no DOM)
+  if (!HAS_DOM) {
+    window.__planner = { parsePre, check, chips, analyze, loadSample, summaryText, state: () => S, reset: () => { S = fresh(); } };
+    return;
+  }
+
+  // ---------------------------------------------------------------- rendering
+
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  function chipHTML(ch, A) {
+    const cls = ['chip', `g-${ch.group}`];
+    if (sel === ch.id) cls.push('sel');
+    if (A.bad[ch.id]) cls.push('bad');
+    if (ch.kind === 'te' && !ch.filled) cls.push('open');
+    const sub = ch.kind === 'disc' && ch.detail ? `${ch.title}: ${ch.detail}` : ch.title;
+    return `<button type="button" class="${cls.join(' ')}" draggable="true" data-chip="${esc(ch.id)}" aria-pressed="${sel === ch.id}">`
+      + `<span class="code">${esc(ch.code)}</span><span class="cr">${esc(ch.crText || ch.cr)} cr</span>`
+      + `<span class="title">${esc(sub)}</span>${A.bad[ch.id] ? '<span class="flag">Prerequisite order</span>' : ''}</button>`;
+  }
+
+  // Chip if unplaced, otherwise a short "where it is" link
+  function trayItem(ch, A) {
+    const t = S.place[ch.id];
+    if (t === undefined) return chipHTML(ch, A);
+    return `<button type="button" class="where${sel === ch.id ? ' sel' : ''}${A.bad[ch.id] ? ' bad' : ''}" data-chip="${esc(ch.id)}">`
+      + `<span>${esc(ch.kind === 'disc' ? ch.title : ch.code)}</span><span>${esc(termLabel(t, true))}</span></button>`;
+  }
+
+  function teSelect(slot) {
+    const cur = S.te[slot.id];
+    let h = `<select data-te="${slot.id}" aria-label="${esc(slot.label)}"><option value="">Choose a course</option>`;
+    for (const key of slot.lists) {
+      const L = P.te.lists[key];
+      h += `<optgroup label="${esc(L.label)}">`;
+      for (const code of L.codes) {
+        h += `<option value="${code}"${cur && !cur.custom && cur.code === code ? ' selected' : ''}>${code} ${esc(C[code].t)} (${C[code].cr})</option>`;
+      }
+      h += '</optgroup>';
+    }
+    if (slot.custom) h += `<option value="__custom"${cur && cur.custom ? ' selected' : ''}>Other course (needs approval)</option>`;
+    h += '</select>';
+    if (cur && cur.custom) {
+      h += `<div class="inline"><input type="text" data-te-code="${slot.id}" value="${esc(cur.code || '')}" placeholder="Code, e.g. ECE 651" aria-label="Course code">`
+        + `<input type="number" min="1" max="6" data-te-cr="${slot.id}" value="${esc(cur.cr || 3)}" aria-label="Credits"></div>`;
+    }
+    return h;
+  }
+
+  function renderTray(A) {
+    const lock = lockedSlot();
+    let h = '<h2>Requirements</h2><p class="lede">Pick a course, then pick a term. Or drag it.</p>';
+    for (const g of P.groups) {
+      const mine = A.list.filter(ch => ch.group === g.id);
+      const done = mine.filter(ch => S.place[ch.id] !== undefined).length;
+      h += `<section class="group g-${g.id}"><h3><span class="dot"></span>${esc(g.label)}`
+        + (mine.length ? `<span class="count">${done}/${mine.length} placed</span>` : '') + '</h3>';
+
+      for (const req of P.reqs.filter(r => r.group === g.id)) {
+        if (req.options.length > 1) {
+          h += `<label class="row"><span>${esc(req.label)}</span><select data-choice="${req.id}">`;
+          req.options.forEach((o, i) => {
+            h += `<option value="${i}"${(S.choice[req.id] || 0) === i ? ' selected' : ''}>${esc([...new Set(o)].join(' + '))}</option>`;
+          });
+          h += '</select></label>';
+        }
+        h += '<div class="items">' + mine.filter(ch => ch.req === req).map(ch => trayItem(ch, A)).join('') + '</div>';
+      }
+
+      if (g.id === 'disc') {
+        for (const d of P.discovery) {
+          const ch = mine.find(c => c.id === d.id);
+          h += `<div class="row"><span>${esc(d.label)}</span>`
+            + `<input type="text" data-disc="${d.id}" value="${esc(S.disc[d.id] || '')}" placeholder="Course (optional)" aria-label="${esc(d.label)} course"></div>`
+            + `<div class="items">${trayItem(ch, A)}</div>`;
+        }
+      }
+
+      if (g.id === 'te') {
+        for (const slot of P.te.slots) {
+          h += `<div class="row col"><span>${esc(slot.label)}</span>`;
+          if (slot.id === lock) {
+            h += `<p class="note">${esc(P.te.linearity.text)}</p></div>`;
+            continue;
+          }
+          h += teSelect(slot) + '</div>';
+          h += `<div class="items">${trayItem(mine.find(c => c.id === slot.id), A)}</div>`;
+        }
+        h += '<details><summary>Elective rules</summary><ul>' + P.rules.map(r => `<li>${esc(r)}</li>`).join('') + '</ul></details>';
+      }
+
+      if (g.id === 'extra') {
+        h += '<p class="note">Add anything else: prerequisite math, a minor, free electives, AP credit.</p>';
+        for (const x of S.extra) {
+          const ch = mine.find(c => c.id === x.id);
+          h += `<div class="items x">${trayItem(ch, A)}<button type="button" class="mini" data-rm-extra="${x.id}" aria-label="Remove ${esc(x.code)}">Remove</button></div>`;
+        }
+        h += '<div class="inline"><input type="text" id="x-code" placeholder="Code, e.g. MATH 418" aria-label="Course code">'
+          + '<input type="number" id="x-cr" min="0" max="8" value="4" aria-label="Credits">'
+          + '<button type="button" class="mini" data-act="add-extra">Add</button></div>';
+      }
+      h += '</section>';
+    }
+    return h;
+  }
+
+  function termHTML(t, A, selChip) {
+    const here = A.list.filter(ch => S.place[ch.id] === t);
+    const cls = ['term'];
+    if (t === 0) cls.push('prior');
+    let hint = '';
+    if (selChip && S.place[selChip.id] !== t) {
+      const ok = t === 0 || !selChip.pre || check(parsePre(selChip.pre), t, A.map);
+      cls.push('target', ok ? 'ok' : 'early');
+      hint = `<button type="button" class="hint" data-place="${t}">${ok ? 'Place here' : 'Place here (prerequisites not met yet)'}</button>`;
+    }
+    const over = t > 0 && (A.load[t] > 20 || (A.load[t] > 0 && A.load[t] < 12));
+    const name = t === 0 ? 'Prior credit (AP, transfer, earlier coursework)' : (t % 2 ? 'Fall' : 'Spring');
+    return `<div class="${cls.join(' ')}" data-term="${t}"><div class="term-h"><span>${name}</span>`
+      + `<span class="load${over ? ' warn' : ''}">${A.load[t]} cr</span></div>`
+      + `<div class="term-c">${here.map(ch => chipHTML(ch, A)).join('')}</div>${hint}</div>`;
+  }
+
+  function renderGrid(A) {
+    const selChip = sel ? A.list.find(c => c.id === sel) : null;
+    let h = '';
+    for (let y = 1; y <= S.nTerms / 2; y++) {
+      h += `<div class="year"><h3>Year ${y}</h3><div class="pair">${termHTML(2 * y - 1, A, selChip)}${termHTML(2 * y, A, selChip)}</div></div>`;
+    }
+    h += `<div class="year">${termHTML(0, A, selChip)}</div>`;
+    h += '<div class="grid-actions"><button type="button" data-act="add-year">Add a year</button>'
+      + (S.nTerms > 8 ? '<button type="button" data-act="rm-year">Remove last year</button>' : '') + '</div>';
+    return h;
+  }
+
+  function preHTML(ch, A) {
+    if (!ch.pre) return '<p class="note">No prerequisites listed.</p>';
+    const n = parsePre(ch.pre);
+    const t = S.place[ch.id] === undefined ? S.nTerms + 1 : S.place[ch.id];
+    const leaf = k => {
+      if (k.op) return (k.op === 'and' ? '(' : '') + k.kids.map(leaf).join(k.op === 'and' ? ' and ' : ' or ') + (k.op === 'and' ? ')' : '');
+      return `<b>${esc(k.c)}</b>${k.co ? ' <i>(same term is fine)</i>' : ''}`;
+    };
+    const kids = n.op === 'and' ? n.kids : [n];
+    return '<ul class="pre">' + kids.map(k => {
+      const ok = t === 0 || check(k, t, A.map);
+      return `<li class="${ok ? 'ok' : 'no'}"><span class="mark">${ok ? 'Met' : 'Not met'}</span><span>${leaf(k)}</span></li>`;
+    }).join('') + '</ul>';
+  }
+
+  function renderDetail(A) {
+    const ch = sel ? A.list.find(c => c.id === sel) : null;
+    if (!ch) {
+      return '<h2>Course details</h2><p class="note">Select a course to see its prerequisites.</p>';
+    }
+    const t = S.place[ch.id];
+    const g = P.groups.find(x => x.id === ch.group);
+    let h = `<h2>${esc(ch.kind === 'disc' ? 'Discovery: ' + ch.title : ch.code)}</h2>`;
+    if (ch.kind !== 'disc' && ch.title) h += `<p class="dtitle">${esc(ch.title)}</p>`;
+    h += `<p class="meta">${esc(ch.crText || ch.cr)} credits · ${esc(g.label)} · ${t === undefined ? 'Not placed' : esc(termLabel(t))}</p>`;
+    if (ch.kind === 'disc') {
+      h += '<p class="note">Any course carrying this Discovery attribute. Name it in the list at left if you have one in mind.</p>';
+    } else if (ch.kind === 'te' && !ch.filled) {
+      h += '<p class="note">Choose the course in the Technical electives list at left.</p>';
+    } else if (ch.kind === 'extra' || ch.custom) {
+      h += '<p class="note">Prerequisites aren\'t checked for courses you add yourself.</p>';
+    } else {
+      h += '<h3>Prerequisites</h3>' + preHTML(ch, A);
+    }
+    if (ch.note) h += `<p class="note">${esc(ch.note)}</p>`;
+    if (t !== undefined) h += `<button type="button" data-unplace="${esc(ch.id)}">Take out of ${esc(termLabel(t))}</button>`;
+    return h;
+  }
+
+  function issueList(items, cls, label) {
+    if (!items.length) return '';
+    return `<h3 class="${cls}">${label} (${items.length})</h3><ul class="issues ${cls}">`
+      + items.map(i => `<li>${i.chip ? `<button type="button" class="link" data-chip="${esc(i.chip)}">${esc(i.text)}</button>` : esc(i.text)}</li>`).join('')
+      + '</ul>';
+  }
+
+  function renderChecks(A) {
+    const n = A.errors.length + A.warns.length + A.todos.length;
+    let h = '<h2>Plan check</h2>';
+    if (!n) h += '<p class="allgood">No open items. Review the plan with your advisor.</p>';
+    h += issueList(A.errors, 'err', 'Prerequisite order')
+      + issueList(A.warns, 'warn', 'Rules to review')
+      + issueList(A.todos, 'todo', 'Still to do');
+    h += '<h3>Discovery</h3><ul class="disc">' + A.disc.map(d =>
+      `<li class="${d.ok ? 'ok' : 'no'}"><span>${esc(d.label)}</span><span>${esc(d.text)}</span></li>`).join('') + '</ul>';
+    h += '<details><summary>Program policies</summary><ul>' + P.policies.map(r => `<li>${esc(r)}</li>`).join('') + '</ul></details>';
+    return h;
+  }
+
+  function renderTop(A) {
+    const pct = Math.min(100, Math.round(100 * A.total / P.minCredits));
+    const n = A.errors.length + A.warns.length;
+    return `<div class="titles"><p class="kicker">Degree planner · ${esc(P.catalog)} catalog</p><h1>${esc(P.name)}</h1></div>`
+      + `<div class="stats"><div class="stat"><span class="num">${A.total}<small> / ${P.minCredits}</small></span><span class="lab">credits planned</span>`
+      + `<div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="${P.minCredits}" aria-valuenow="${Math.min(A.total, P.minCredits)}"><i style="width:${pct}%"></i></div></div>`
+      + `<div class="stat"><span class="num">${A.placed}<small> / ${A.list.length}</small></span><span class="lab">courses placed</span></div>`
+      + `<div class="stat${A.errors.length ? ' err' : n ? ' warn' : ''}"><span class="num">${n}</span><span class="lab">items to review</span></div></div>`
+      + '<div class="tools">'
+      + '<button type="button" data-act="sample">Load sample plan</button>'
+      + '<button type="button" data-act="clear">Clear</button>'
+      + '<button type="button" data-act="copy">Copy summary</button>'
+      + '<button type="button" data-act="save">Save file</button>'
+      + '<button type="button" data-act="open">Open file</button>'
+      + '<button type="button" data-act="print">Print</button>'
+      + '<span class="others">' + (window.PLANNERS || []).filter(o => o.id !== P.id)
+        .map(o => `<a href="${esc(o.href)}">${esc(o.name)}</a>`).join('') + '</span>'
+      + `</div><p class="flash" role="status">${esc(flash)}</p>`;
+  }
+
+  const $ = id => document.getElementById(id);
+
+  function render() {
+    const A = analyze();
+    $('top').innerHTML = renderTop(A);
+    $('tray').innerHTML = renderTray(A);
+    $('grid').innerHTML = renderGrid(A);
+    $('detail').innerHTML = renderDetail(A);
+    $('checks').innerHTML = renderChecks(A);
+    document.body.classList.toggle('placing', !!sel);
+    flash = '';
+    return A;
+  }
+
+  function commit() { save(); render(); }
+
+  // ---------------------------------------------------------------- actions
+
+  function place(id, t) {
+    S.place[id] = t;
+    sel = null;
+    commit();
+  }
+
+  function download(name, text) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+
+  const actions = {
+    sample() {
+      if (Object.keys(S.place).length && !confirm('Replace the current term placements with the catalog sample plan?')) return;
+      loadSample();
+      sel = null;
+      flash = 'Sample plan loaded. Move courses to fit your situation.';
+      commit();
+    },
+    clear() {
+      if (!confirm('Clear the whole plan, including course choices?')) return;
+      S = fresh();
+      sel = null;
+      commit();
+    },
+    copy() {
+      const text = summaryText(analyze());
+      const done = () => { flash = 'Summary copied. Paste it into an email to your advisor.'; render(); };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, () => window.prompt('Copy the summary:', text));
+      } else {
+        window.prompt('Copy the summary:', text);
+      }
+    },
+    save() {
+      download(`${P.id}_plan.json`, JSON.stringify({ program: P.id, catalog: P.catalog, state: S }, null, 2));
+    },
+    open() { $('file').click(); },
+    print() { window.print(); },
+    'add-year'() { S.nTerms += 2; commit(); },
+    'rm-year'() {
+      if (S.nTerms <= 8) return;
+      S.nTerms -= 2;
+      commit();
+    },
+    'add-extra'() {
+      const code = $('x-code').value.trim();
+      if (!code) return;
+      S.n += 1;
+      S.extra.push({ id: `X${S.n}`, code, cr: +$('x-cr').value || 0 });
+      commit();
+    },
+  };
+
+  document.addEventListener('click', e => {
+    const el = e.target.closest('[data-act],[data-chip],[data-unplace],[data-rm-extra],[data-place],[data-term]');
+    if (!el) {
+      if (sel && !e.target.closest('#detail, #tray')) { sel = null; render(); }
+      return;
+    }
+    if (el.dataset.act) return actions[el.dataset.act]();
+    if (el.dataset.chip) {
+      sel = sel === el.dataset.chip ? null : el.dataset.chip;
+      render();
+      return;
+    }
+    if (el.dataset.unplace) { delete S.place[el.dataset.unplace]; commit(); return; }
+    if (el.dataset.rmExtra) {
+      S.extra = S.extra.filter(x => x.id !== el.dataset.rmExtra);
+      commit();
+      return;
+    }
+    if (el.dataset.place !== undefined && sel) return place(sel, +el.dataset.place);
+    if (el.dataset.term !== undefined && sel) return place(sel, +el.dataset.term);
+  });
+
+  document.addEventListener('change', e => {
+    const d = e.target.dataset;
+    if (d.choice) {
+      S.choice[d.choice] = +e.target.value;
+    } else if (d.te) {
+      const v = e.target.value;
+      if (!v) delete S.te[d.te];
+      else if (v === '__custom') S.te[d.te] = { custom: true, code: '', cr: 3 };
+      else S.te[d.te] = { code: v };
+    } else if (d.teCode) {
+      S.te[d.teCode].code = e.target.value;
+    } else if (d.teCr) {
+      S.te[d.teCr].cr = +e.target.value || 3;
+    } else if (d.disc) {
+      S.disc[d.disc] = e.target.value.trim();
+    } else if (e.target.id === 'file') {
+      const f = e.target.files[0];
+      if (!f) return;
+      f.text().then(txt => {
+        let obj = null;
+        try { obj = JSON.parse(txt); } catch (err) { /* handled below */ }
+        if (!obj || obj.program !== P.id || !adopt(obj.state)) {
+          flash = `That file isn't a ${P.id} plan.`;
+          render();
+        } else {
+          sel = null;
+          flash = 'Plan loaded.';
+          commit();
+        }
+        e.target.value = '';
+      });
+      return;
+    } else {
+      return;
+    }
+    commit();
+  });
+
+  // Drag and drop
+  document.addEventListener('dragstart', e => {
+    const el = e.target.closest && e.target.closest('[data-chip]');
+    if (!el) return;
+    dragId = el.dataset.chip;
+    e.dataTransfer.setData('text/plain', dragId);
+    e.dataTransfer.effectAllowed = 'move';
+    document.body.classList.add('dragging');
+  });
+  document.addEventListener('dragend', () => {
+    dragId = null;
+    document.body.classList.remove('dragging');
+    document.querySelectorAll('.over').forEach(n => n.classList.remove('over'));
+  });
+  document.addEventListener('dragover', e => {
+    const zone = e.target.closest && e.target.closest('[data-term], #tray');
+    if (!zone || !dragId) return;
+    e.preventDefault();
+    document.querySelectorAll('.over').forEach(n => n !== zone && n.classList.remove('over'));
+    zone.classList.add('over');
+  });
+  document.addEventListener('drop', e => {
+    const zone = e.target.closest && e.target.closest('[data-term], #tray');
+    if (!zone || !dragId) return;
+    e.preventDefault();
+    const id = dragId;
+    dragId = null;
+    document.body.classList.remove('dragging');
+    if (zone.id === 'tray') { delete S.place[id]; sel = null; commit(); }
+    else place(id, +zone.dataset.term);
+  });
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && sel) { sel = null; render(); }
+  });
+
+  load();
+  render();
+})();
+
+</script>
+</body>
+</html>
